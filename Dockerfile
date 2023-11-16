@@ -10,6 +10,8 @@ FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 LABEL maintainer="moechs <68768084+moechs@users.noreply.github.com>"
 
+# Docker Build Arguments
+ARG TZ=Asia/Shanghai
 ARG LUAJIT_VERSION=2.1-20230410
 ARG RESTY_LUAROCKS_VERSION="3.9.2"
 ARG NGINX_DIGEST_AUTH=1.0.0
@@ -20,7 +22,6 @@ ARG MODSECURITY_LIB_VERSION=e9a7ba4a60be48f761e0328c6dfcc668d70e35a0
 ARG OWASP_MODSECURITY_CRS_VERSION=v3.3.5
 ARG LUA_RESTY_GLOBAL_THROTTLE_VERSION=0.2.0
 
-# Docker Build Arguments
 ARG RESTY_IMAGE_BASE="alpine"
 ARG RESTY_IMAGE_TAG="3.18"
 ARG RESTY_VERSION="1.21.4.3"
@@ -32,11 +33,11 @@ ARG RESTY_PCRE_BUILD_OPTIONS="--enable-jit"
 ARG RESTY_PCRE_SHA256="4e6ce03e0336e8b4a3d6c2b70b1c5e18590a5673a98186da90d4f33c23defc09"
 ARG RESTY_J="4"
 ARG RESTY_CONFIG_OPTIONS="\
-    --http-client-body-temp-path=/var/run/openresty/client_body_temp/ \
-    --http-fastcgi-temp-path=/var/run/openresty/fastcgi_temp/ \
-    --http-uwsgi-temp-path=/var/run/openresty/uwsgi_temp/ \
-    --http-scgi-temp-path=/var/run/openresty/scgi_temp/ \
-    --http-proxy-temp-path=/var/run/openresty/proxy_temp/ \
+    --http-client-body-temp-path=/data/cache/openresty/client_body_temp/ \
+    --http-fastcgi-temp-path=/data/cache/openresty/fastcgi_temp/ \
+    --http-uwsgi-temp-path=/data/cache/openresty/uwsgi_temp/ \
+    --http-scgi-temp-path=/data/cache/openresty/scgi_temp/ \
+    --http-proxy-temp-path=/data/cache/openresty/proxy_temp/ \
     --with-compat \
     --with-file-aio \
     --with-http_addition_module \
@@ -77,35 +78,64 @@ ARG RESTY_CONFIG_OPTIONS_MORE="\
     "
 ARG RESTY_LUAJIT_OPTIONS="--with-luajit-xcflags='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT'"
 ARG RESTY_PCRE_OPTIONS="--with-pcre-jit"
+
 # These are not intended to be user-specified
 ARG _RESTY_CONFIG_DEPS="--with-pcre \
     --with-cc-opt='-DNGX_LUA_ABORT_AT_PANIC -I/usr/local/openresty/pcre/include -I/usr/local/openresty/openssl/include' \
     --with-ld-opt='-L/usr/local/openresty/pcre/lib -L/usr/local/openresty/openssl/lib -Wl,-rpath,/usr/local/openresty/pcre/lib:/usr/local/openresty/openssl/lib' \
     "
 
+ENV TZ=${TZ}
 # Add additional binaries into PATH for convenience
 ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/nginx/sbin:/usr/local/openresty/bin
 
 RUN apk add --no-cache --virtual .build-deps \
+        autoconf \
+        automake \
+        bash \
         build-base \
         coreutils \
-        curl \
+        curl-dev \
+        gawk \
         gd-dev \
         geoip-dev \
+        git \
+        libcurl \
+        libmaxminddb-dev \
+        libtool \
+        libxml2 \
         libxslt-dev \
         linux-headers \
+        lmdb \
         make \
         perl-dev \
         readline-dev \
+        yajl-dev \
         zlib-dev \
-        bash git gawk libmaxminddb-dev zlib patch yajl lmdb libxml2 autoconf automake libtool libcurl pcre lmdb yajl curl-dev \
+        patch \
+        libcap \
     && apk add --no-cache \
+        bash \
+        ca-certificates \
+        curl \
+        diffutils \
+        dumb-init \
         gd \
         geoip \
+        libcurl \
         libgcc \
+        libmaxminddb-libs \
+        libstdc++ \
         libxslt \
+        openssl \
+        perl \
+        tzdata \
+        unzip \
+        util-linux \
+        wget \
+        yajl \
         zlib \
-        bash perl curl wget openssl unzip ca-certificates tzdata libmaxminddb-libs \
+    && echo "/lib:/usr/lib:/usr/local/lib:/usr/local/openresty/luajit/lib:/usr/local/openresty/openssl/lib:/usr/local/openresty/pcre/lib" > /etc/ld-musl-$(uname -m).path \
     && cd /tmp \
     && git config --global --add core.compression -1 \
     && curl -fSL "${RESTY_OPENSSL_URL_BASE}/openssl-${RESTY_OPENSSL_VERSION}.tar.gz" -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
@@ -179,6 +209,7 @@ RUN apk add --no-cache --virtual .build-deps \
       --prefix=/usr \
       --with-lua=/usr/local/openresty/luajit \
       --with-pcre=/usr/local/openresty/pcre \
+      --with-yajl=/usr \
       --disable-doxygen-doc \
       --disable-doxygen-html \
       --disable-examples \
@@ -190,6 +221,10 @@ RUN apk add --no-cache --virtual .build-deps \
     && eval ./configure -j${RESTY_J} ${_RESTY_CONFIG_DEPS} ${RESTY_CONFIG_OPTIONS} ${RESTY_CONFIG_OPTIONS_MORE} ${RESTY_LUAJIT_OPTIONS} ${RESTY_PCRE_OPTIONS} \
     && make -j${RESTY_J} \
     && make -j${RESTY_J} install \
+    && setcap    cap_net_bind_service=+ep /usr/local/openresty/nginx/sbin/nginx \
+    && setcap -v cap_net_bind_service=+ep /usr/local/openresty/nginx/sbin/nginx \
+    && setcap    cap_net_bind_service=+ep /usr/bin/dumb-init \
+    && setcap -v cap_net_bind_service=+ep /usr/bin/dumb-init \
     && cd /tmp \
     && opm get knyar/nginx-lua-prometheus \
         xiangnanscu/lua-resty-ipmatcher \
@@ -224,9 +259,18 @@ RUN apk add --no-cache --virtual .build-deps \
     && mv rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf \
     && mv rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf \
     && rm -rf .git* .*.yml *.md docs tests INSTALL KNOWN_BUGS LICENSE util/regression-tests \
-    && mkdir -p /opt/modsecurity/var/log /opt/modsecurity/var/upload /opt/modsecurity/var/audit /var/log/audit /var/log/nginx /var/run/openresty /data/web \
-    && chown -R nobody:nobody /opt/modsecurity /var/log /var/run/openresty /data/web \
     && rm -rf /usr/local/openresty/nginx/*_temp /usr/local/openresty/nginx/conf/* /usr/local/openresty/nginx/html \
+    && rm -f /usr/lib/libmodsecurity.a \
+        /usr/lib/libmodsecurity.la \
+        /usr/local/lib/libfuzzy.a \
+        /usr/local/lib/libfuzzy.la \
+        /usr/local/openresty/luajit/lib/libluajit-5.1.a \
+        /usr/local/openresty/openssl/lib/libcrypto.a \
+        /usr/local/openresty/openssl/lib/libssl.a \
+        /usr/local/openresty/pcre/lib/libpcre.a \
+        /usr/local/openresty/pcre/lib/libpcre.la \
+        /usr/local/openresty/pcre/lib/libpcreposix.a \
+        /usr/local/openresty/pcre/lib/libpcreposix.la \
     && cd /tmp && rm -rf \
         openssl-${RESTY_OPENSSL_VERSION}.tar.gz openssl-${RESTY_OPENSSL_VERSION} \
         pcre-${RESTY_PCRE_VERSION}.tar.gz pcre-${RESTY_PCRE_VERSION} \
@@ -236,15 +280,17 @@ RUN apk add --no-cache --virtual .build-deps \
         ssdeep ModSecurity \
     && apk del .build-deps \
     && rm -rf /var/cache/apk/* \
+    && ln -sf /usr/local/openresty/nginx/sbin/nginx /usr/bin/nginx \
     && ln -sf /dev/stdout /usr/local/openresty/nginx/logs/access.log \
-    && ln -sf /dev/stderr /usr/local/openresty/nginx/logs/error.log
+    && ln -sf /dev/stderr /usr/local/openresty/nginx/logs/error.log \
+    && ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime
+
 
 # Add LuaRocks paths
 # If OpenResty changes, these may need updating:
 #    /usr/local/openresty/bin/resty -e 'print(package.path)'
 #    /usr/local/openresty/bin/resty -e 'print(package.cpath)'
 ENV LUA_PATH="/usr/local/openresty/site/lualib/?.ljbc;/usr/local/openresty/site/lualib/?/init.ljbc;/usr/local/openresty/lualib/?.ljbc;/usr/local/openresty/lualib/?/init.ljbc;/usr/local/openresty/site/lualib/?.lua;/usr/local/openresty/site/lualib/?/init.lua;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua"
-
 ENV LUA_CPATH="/usr/local/openresty/site/lualib/?.so;/usr/local/openresty/lualib/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so"
 
 # Copy nginx configuration files
@@ -252,6 +298,22 @@ COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 COPY nginx/ /etc/nginx/
 COPY lualib/ /usr/local/openresty/site/lualib/
 COPY data/ /usr/local/share/data/
+
+RUN mkdir -p /opt/modsecurity/var/log /opt/modsecurity/var/upload /opt/modsecurity/var/audit \
+        /var/log/audit /var/log/nginx /var/run/openresty /data/web \
+        /data/cache/openresty/client_body_temp \
+        /data/cache/openresty/proxy_temp \
+        /data/cache/openresty/fastcgi_temp \
+        /data/cache/openresty/uwsgi_temp \
+        /data/cache/openresty/scgi_temp \
+        /data/cache/openresty/proxy_cache \
+        /data/cache/openresty/auth_cache \
+    && chown -R nobody:nobody /opt/modsecurity \
+        /var/log \
+        /var/run \
+        /data \
+        /usr/local/openresty \
+        /etc/nginx
 
 CMD ["/usr/local/openresty/bin/openresty", "-g", "daemon off;"]
 
