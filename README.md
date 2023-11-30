@@ -1,4 +1,4 @@
-![GitHub release (with filter)](https://img.shields.io/github/v/release/moechs/openresty-docker) ![Docker Image Version (tag latest semver)](https://img.shields.io/docker/v/moechs/openresty/latest?logo=docker&logoColor=%23fff) [![Docker Image CI](https://github.com/moechs/openresty-docker/actions/workflows/ci.yml/badge.svg)](https://github.com/moechs/openresty-docker/actions/workflows/ci.yml)
+![GitHub release (with filter)](https://img.shields.io/github/v/release/moechs/openresty-docker?logo=github) ![Docker Image Version (tag latest semver)](https://img.shields.io/docker/v/moechs/openresty/latest?logo=docker&logoColor=%23fff) [![Docker Image CI](https://github.com/moechs/openresty-docker/actions/workflows/ci.yml/badge.svg)](https://github.com/moechs/openresty-docker/actions/workflows/ci.yml)
 
 # OpenResty
 Alpine version of OpenResty with luarocks and many additional modules
