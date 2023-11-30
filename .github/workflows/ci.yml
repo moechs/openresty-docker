@@ -3,10 +3,12 @@ name: Docker Image CI
 on:
   push:
     branches:
-      - "main"
-      - "releases/**"
+    - "main"
+    - "releases/**"
     tags:        
     - v*
+    paths-ignore:
+    - '**.md'
 
 env:
   REGISTRY_IMAGE: moechs/openresty

@@ -21,6 +21,7 @@ ARG MODSECURITY_VERSION=1.0.3
 ARG MODSECURITY_LIB_VERSION=e9a7ba4a60be48f761e0328c6dfcc668d70e35a0
 ARG OWASP_MODSECURITY_CRS_VERSION=v3.3.5
 ARG LUA_RESTY_GLOBAL_THROTTLE_VERSION=0.2.0
+ARG LUA_VAR_NGINX_MODULE_VERSION=0.5.3
 
 ARG RESTY_IMAGE_BASE="alpine"
 ARG RESTY_IMAGE_TAG="3.18"
@@ -32,6 +33,7 @@ ARG RESTY_PCRE_VERSION="8.45"
 ARG RESTY_PCRE_BUILD_OPTIONS="--enable-jit"
 ARG RESTY_PCRE_SHA256="4e6ce03e0336e8b4a3d6c2b70b1c5e18590a5673a98186da90d4f33c23defc09"
 ARG RESTY_J="4"
+
 ARG RESTY_CONFIG_OPTIONS="\
     --http-client-body-temp-path=/data/cache/openresty/client_body_temp/ \
     --http-fastcgi-temp-path=/data/cache/openresty/fastcgi_temp/ \
@@ -67,15 +69,34 @@ ARG RESTY_CONFIG_OPTIONS="\
     --with-stream_ssl_module \
     --with-threads \
     "
+
 ARG RESTY_CONFIG_OPTIONS_MORE="\
     --with-stream_ssl_preread_module \
-    --add-module=ngx_http_substitutions_filter_module-$NGINX_SUBSTITUTIONS \
-    --add-dynamic-module=nginx-http-auth-digest-$NGINX_DIGEST_AUTH \
+    --add-module=ngx_http_substitutions_filter_module-${NGINX_SUBSTITUTIONS} \
+    --add-module=lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_VERSION} \
+    --add-dynamic-module=nginx-http-auth-digest-${NGINX_DIGEST_AUTH} \
     --add-dynamic-module=ngx_http_geoip2_module-${GEOIP2_VERSION} \
     --add-dynamic-module=ngx_brotli \
     --add-dynamic-module=nginx-sticky-module-ng \
     --add-dynamic-module=ModSecurity-nginx-${MODSECURITY_VERSION} \
     "
+
+ARG LUAROCKS_PACKAGES="\
+    lua-resty-ngxvar \
+    lua-resty-redis-connector \
+    lua-resty-auto-ssl \
+    lua-resty-libcjson \
+    lua-resty-jit-uuid \
+    lua-resty-cookie \
+    lua-resty-session \
+    lua-resty-jwt \
+    lua-resty-url \
+    lua-resty-requests \
+    lua-resty-etcd \
+    lua-resty-kafka \
+    lapis \
+    "
+
 ARG RESTY_LUAJIT_OPTIONS="--with-luajit-xcflags='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT'"
 ARG RESTY_PCRE_OPTIONS="--with-pcre-jit"
 
@@ -88,6 +109,14 @@ ARG _RESTY_CONFIG_DEPS="--with-pcre \
 ENV TZ=${TZ}
 # Add additional binaries into PATH for convenience
 ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/nginx/sbin:/usr/local/openresty/bin
+
+# Add LuaRocks paths
+# If OpenResty changes, these may need updating:
+#    /usr/local/openresty/bin/resty -e 'print(package.path)'
+#    /usr/local/openresty/bin/resty -e 'print(package.cpath)'
+ENV LUA_PATH="/usr/local/openresty/site/lualib/?.ljbc;/usr/local/openresty/site/lualib/?/init.ljbc;/usr/local/openresty/lualib/?.ljbc;/usr/local/openresty/lualib/?/init.ljbc;/usr/local/openresty/site/lualib/?.lua;/usr/local/openresty/site/lualib/?/init.lua;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua"
+ENV LUA_CPATH="/usr/local/openresty/site/lualib/?.so;/usr/local/openresty/lualib/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so"
+
 
 RUN apk add --no-cache --virtual .build-deps \
         autoconf \
@@ -191,9 +220,11 @@ RUN apk add --no-cache --virtual .build-deps \
     && tar xzf ngx_http_geoip2_module-${GEOIP2_VERSION}.tar.gz \
     && curl -fSL https://github.com/SpiderLabs/ModSecurity-nginx/archive/v${MODSECURITY_VERSION}.tar.gz -o ModSecurity-nginx-${MODSECURITY_VERSION}.tar.gz \
     && tar xzf ModSecurity-nginx-${MODSECURITY_VERSION}.tar.gz \
+    && curl -fSL https://github.com/api7/lua-var-nginx-module/archive/refs/tags/v${LUA_VAR_NGINX_MODULE_VERSION}.tar.gz -o lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_VERSION}.tar.gz \
+    && tar xzf lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_VERSION}.tar.gz \
+    && git clone --depth=1 https://github.com/moechs/nginx-sticky-module-ng.git \
     && git clone --depth=1 https://github.com/google/ngx_brotli.git \
     && cd ngx_brotli && git submodule init && git submodule update && git submodule update && cd - \
-    && git clone --depth=1 https://github.com/moechs/nginx-sticky-module-ng.git \
     && cd bundle/LuaJIT-${LUAJIT_VERSION} \
     && make -j8 TARGET_STRIP=@: CCDEBUG=-g XCFLAGS='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT' CC=cc PREFIX=/usr/local/openresty/luajit \
     && make install PREFIX=/usr/local/openresty/luajit \
@@ -251,6 +282,8 @@ RUN apk add --no-cache --virtual .build-deps \
         --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
     && make build \
     && make install \
+    && cd /tmp \
+    && for pkg in ${LUAROCKS_PACKAGES};do luarocks install ${pkg};done \
     && mkdir -p /etc/nginx \
     && cd /etc/nginx/ \
     && git clone -b ${OWASP_MODSECURITY_CRS_VERSION} https://github.com/coreruleset/coreruleset \
@@ -280,26 +313,12 @@ RUN apk add --no-cache --virtual .build-deps \
         ssdeep ModSecurity \
     && apk del .build-deps \
     && rm -rf /var/cache/apk/* \
+    && ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime \
     && ln -sf /usr/local/openresty/nginx/sbin/nginx /usr/bin/nginx \
     && ln -sf /dev/stdout /usr/local/openresty/nginx/logs/access.log \
     && ln -sf /dev/stderr /usr/local/openresty/nginx/logs/error.log \
-    && ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime
-
-
-# Add LuaRocks paths
-# If OpenResty changes, these may need updating:
-#    /usr/local/openresty/bin/resty -e 'print(package.path)'
-#    /usr/local/openresty/bin/resty -e 'print(package.cpath)'
-ENV LUA_PATH="/usr/local/openresty/site/lualib/?.ljbc;/usr/local/openresty/site/lualib/?/init.ljbc;/usr/local/openresty/lualib/?.ljbc;/usr/local/openresty/lualib/?/init.ljbc;/usr/local/openresty/site/lualib/?.lua;/usr/local/openresty/site/lualib/?/init.lua;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua"
-ENV LUA_CPATH="/usr/local/openresty/site/lualib/?.so;/usr/local/openresty/lualib/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so"
-
-# Copy nginx configuration files
-COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
-COPY nginx/ /etc/nginx/
-COPY lualib/ /usr/local/openresty/site/lualib/
-COPY data/ /usr/local/share/data/
-
-RUN mkdir -p /opt/modsecurity/var/log /opt/modsecurity/var/upload /opt/modsecurity/var/audit \
+    && ln -snf /etc/nginx/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf \
+    && mkdir -p /opt/modsecurity/var/log /opt/modsecurity/var/upload /opt/modsecurity/var/audit \
         /var/log/audit /var/log/nginx /var/run/openresty /data/web \
         /data/cache/openresty/client_body_temp \
         /data/cache/openresty/proxy_temp \
@@ -314,6 +333,12 @@ RUN mkdir -p /opt/modsecurity/var/log /opt/modsecurity/var/upload /opt/modsecuri
         /data \
         /usr/local/openresty \
         /etc/nginx
+
+# Copy nginx configuration files
+COPY nginx/ /etc/nginx/
+COPY lualib/ /usr/local/openresty/site/lualib/
+COPY data/ /usr/local/share/data/
+COPY nginx.conf /etc/nginx/nginx.conf
 
 CMD ["/usr/local/openresty/bin/openresty", "-g", "daemon off;"]
 
