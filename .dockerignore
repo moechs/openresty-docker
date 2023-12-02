@@ -1,0 +1,10 @@
+## Ignore everything
+*
+
+## Except the following files and directories
+!data
+!Dockerfile
+!lualib
+!nginx
+!nginx.conf
+!defaultbackend
