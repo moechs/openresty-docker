@@ -20,7 +20,7 @@ ARG NGINX_PROXY_CONNECT_VERSION=0.0.5
 ARG NGINX_PROXY_CONNECT_PATCH=proxy_connect_rewrite_102101.patch
 ARG GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
 ARG MODSECURITY_VERSION=1.0.3
-ARG MODSECURITY_LIB_VERSION=e9a7ba4a60be48f761e0328c6dfcc668d70e35a0
+ARG MODSECURITY_LIB_VERSION=bbde9381cbccb49ea73f6194b08b478adc53f3bc
 ARG OWASP_MODSECURITY_CRS_VERSION=v3.3.5
 ARG LUA_RESTY_GLOBAL_THROTTLE_VERSION=0.2.0
 ARG LUA_VAR_NGINX_MODULE_VERSION=0.5.3
@@ -37,6 +37,12 @@ ARG RESTY_PCRE_SHA256="4e6ce03e0336e8b4a3d6c2b70b1c5e18590a5673a98186da90d4f33c2
 ARG RESTY_J="4"
 
 ARG RESTY_CONFIG_OPTIONS="\
+    --sbin-path=/usr/sbin/nginx \
+    --conf-path=/etc/nginx/nginx.conf \
+    --modules-path=/usr/local/openresty/nginx/modules/ \
+    --error-log-path=/var/log/openresty/error.log \
+    --pid-path=/var/run/openresty/nginx.pid \
+    --lock-path=/var/run/openresty/nginx.lock \
     --http-client-body-temp-path=/var/cache/openresty/client_body_temp/ \
     --http-fastcgi-temp-path=/var/cache/openresty/fastcgi_temp/ \
     --http-uwsgi-temp-path=/var/cache/openresty/uwsgi_temp/ \
@@ -111,7 +117,7 @@ ARG _RESTY_CONFIG_DEPS="--with-pcre \
 
 ENV TZ=${TZ}
 # Add additional binaries into PATH for convenience
-ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/nginx/sbin:/usr/local/openresty/bin
+ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/bin
 
 # Add LuaRocks paths
 # If OpenResty changes, these may need updating:
@@ -256,11 +262,12 @@ RUN apk add --no-cache --virtual .build-deps \
     && mkdir -p /etc/nginx/modsecurity \
     && cp unicode.mapping /etc/nginx/modsecurity/unicode.mapping \
     && cd /tmp/openresty-${RESTY_VERSION} \
+    && sed -i 's#$ngx_prefix = "$prefix/nginx";#$ngx_prefix = "/etc/nginx";#g' configure \
     && eval ./configure -j${RESTY_J} ${_RESTY_CONFIG_DEPS} ${RESTY_CONFIG_OPTIONS} ${RESTY_CONFIG_OPTIONS_MORE} ${RESTY_LUAJIT_OPTIONS} ${RESTY_PCRE_OPTIONS} \
     && make -j${RESTY_J} \
     && make -j${RESTY_J} install \
-    && setcap    cap_net_bind_service=+ep /usr/local/openresty/nginx/sbin/nginx \
-    && setcap -v cap_net_bind_service=+ep /usr/local/openresty/nginx/sbin/nginx \
+    && setcap    cap_net_bind_service=+ep /usr/sbin/nginx \
+    && setcap -v cap_net_bind_service=+ep /usr/sbin/nginx \
     && setcap    cap_net_bind_service=+ep /usr/bin/dumb-init \
     && setcap -v cap_net_bind_service=+ep /usr/bin/dumb-init \
     && cd /tmp \
@@ -299,7 +306,7 @@ RUN apk add --no-cache --virtual .build-deps \
     && mv rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf \
     && mv rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf \
     && rm -rf .git* .*.yml *.md docs tests INSTALL KNOWN_BUGS LICENSE util/regression-tests \
-    && rm -rf /usr/local/openresty/nginx/*_temp /usr/local/openresty/nginx/conf/* /usr/local/openresty/nginx/html \
+    && rm -rf /etc/nginx/*_temp /etc/nginx/conf/* /etc/nginx/html \
     && rm -f /usr/lib/libmodsecurity.a \
         /usr/lib/libmodsecurity.la \
         /usr/local/lib/libfuzzy.a \
@@ -319,14 +326,13 @@ RUN apk add --no-cache --virtual .build-deps \
         luarocks-${RESTY_LUAROCKS_VERSION} luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
         ssdeep ModSecurity \
     && apk del .build-deps \
-    && rm -rf /var/cache/apk/* \
+    && rm -rf /var/cache/apk/* /etc/nginx/logs \
     && ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime \
-    && ln -sf /usr/local/openresty/nginx/sbin/nginx /usr/bin/nginx \
-    && ln -sf /dev/stdout /usr/local/openresty/nginx/logs/access.log \
-    && ln -sf /dev/stderr /usr/local/openresty/nginx/logs/error.log \
-    && ln -snf /etc/nginx/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf \
+    && ln -sf /dev/stdout /var/log/openresty/access.log \
+    && ln -sf /dev/stderr /var/log/openresty/error.log \
+    && ln -sf /var/log/openresty /etc/nginx/logs \
     && mkdir -p /opt/modsecurity/var/log /opt/modsecurity/var/upload /opt/modsecurity/var/audit \
-        /var/log/audit /var/log/nginx /var/run/openresty /data/web /usr/local/data \
+        /var/log/audit /var/log/openresty /var/run/openresty /data/web /usr/local/data \
         /var/cache/openresty/client_body_temp \
         /var/cache/openresty/proxy_temp \
         /var/cache/openresty/fastcgi_temp \
@@ -335,10 +341,10 @@ RUN apk add --no-cache --virtual .build-deps \
         /var/cache/openresty/proxy_cache \
         /var/cache/openresty/auth_cache \
     && chown -R nobody:nobody /opt/modsecurity \
-        /var/log \
-        /var/run \
         /data \
+        /var/log \
         /var/cache/openresty \
+        /var/run/openresty \
         /usr/local/openresty \
         /etc/nginx \
     && curl -fSL $(curl -s https://api.github.com/repos/metowolf/qqwry.dat/releases/latest|jq -r '.assets[0].browser_download_url') -o /usr/local/data/qqwry.dat \
@@ -354,7 +360,7 @@ COPY nginx/ /etc/nginx/
 COPY lualib/ /usr/local/openresty/site/lualib/
 COPY nginx.conf /etc/nginx/nginx.conf
 
-CMD ["/usr/local/openresty/bin/openresty", "-g", "daemon off;"]
+CMD ["/usr/sbin/nginx", "-g", "daemon off;"]
 
 # Use SIGQUIT instead of default SIGTERM to cleanly drain requests
 # See https://github.com/openresty/docker-openresty/blob/master/README.md#tips--pitfalls

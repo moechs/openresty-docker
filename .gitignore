@@ -3,3 +3,5 @@
 *.swp
 *.log
 *.bak
+*.gz
+openresty*

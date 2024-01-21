@@ -9,7 +9,7 @@ ADD http.conf /etc/nginx/conf.d/common.conf
 ADD vhost.conf /etc/nginx/vhost/default.conf
 ADD error_page.conf /etc/nginx/error_page.conf
 
-RUN chown -R nobody:nobody /etc/nginx
+RUN chown -R nobody:nobody /etc/nginx /var/log /var/run/openresty
 
 USER nobody
 
