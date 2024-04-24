@@ -4,37 +4,36 @@
 # https://github.com/openresty/docker-openresty
 
 ARG RESTY_IMAGE_BASE="alpine"
-ARG RESTY_IMAGE_TAG="3.18"
+ARG RESTY_IMAGE_TAG="3.19"
 
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 LABEL maintainer="moechs <68768084+moechs@users.noreply.github.com>"
 
-# Docker Build Arguments
 ARG TZ=Asia/Shanghai
-ARG LUAJIT_VERSION=2.1-20230410
-ARG RESTY_LUAROCKS_VERSION="3.9.2"
-ARG NGINX_DIGEST_AUTH=1.0.0
-ARG NGINX_SUBSTITUTIONS=b8a71eacc7f986ba091282ab8b1bbbc6ae1807e0
-ARG NGINX_PROXY_CONNECT_VERSION=0.0.5
-ARG NGINX_PROXY_CONNECT_PATCH=proxy_connect_rewrite_102101.patch
-ARG GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
-ARG MODSECURITY_VERSION=1.0.3
-ARG MODSECURITY_LIB_VERSION=bbde9381cbccb49ea73f6194b08b478adc53f3bc
-ARG OWASP_MODSECURITY_CRS_VERSION=v3.3.5
-ARG LUA_RESTY_GLOBAL_THROTTLE_VERSION=0.2.0
-ARG LUA_VAR_NGINX_MODULE_VERSION=0.5.3
 
-ARG RESTY_IMAGE_BASE="alpine"
-ARG RESTY_IMAGE_TAG="3.18"
-ARG RESTY_VERSION="1.21.4.3"
+# Docker Build Arguments
+ARG RESTY_VERSION="1.25.3.1"
 ARG RESTY_OPENSSL_VERSION="1.1.1w"
 ARG RESTY_OPENSSL_PATCH_VERSION="1.1.1f"
 ARG RESTY_OPENSSL_URL_BASE="https://www.openssl.org/source"
 ARG RESTY_PCRE_VERSION="8.45"
 ARG RESTY_PCRE_BUILD_OPTIONS="--enable-jit"
 ARG RESTY_PCRE_SHA256="4e6ce03e0336e8b4a3d6c2b70b1c5e18590a5673a98186da90d4f33c23defc09"
-ARG RESTY_J="4"
+ARG RESTY_J="2"
+
+ARG LUAJIT_VERSION=2.1-20231117
+ARG RESTY_LUAROCKS_VERSION="3.11.0"
+ARG NGINX_DIGEST_AUTH=1.0.0
+ARG NGINX_SUBSTITUTIONS=e12e965ac1837ca709709f9a26f572a54d83430e
+ARG NGINX_PROXY_CONNECT_VERSION=0.0.6
+ARG NGINX_PROXY_CONNECT_PATCH=proxy_connect_rewrite_102101.patch
+ARG GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
+ARG MODSECURITY_VERSION=1.0.3
+ARG MODSECURITY_LIB_VERSION=v3.0.12
+ARG OWASP_MODSECURITY_CRS_VERSION=v3.3.5
+ARG LUA_RESTY_GLOBAL_THROTTLE_VERSION=0.2.0
+ARG LUA_VAR_NGINX_MODULE_VERSION=0.5.3
 
 ARG RESTY_CONFIG_OPTIONS="\
     --sbin-path=/usr/sbin/nginx \
@@ -67,6 +66,7 @@ ARG RESTY_CONFIG_OPTIONS="\
     --with-http_stub_status_module \
     --with-http_sub_module \
     --with-http_v2_module \
+    --with-http_v3_module \
     --with-http_xslt_module=dynamic \
     --with-ipv6 \
     --with-mail \
@@ -82,9 +82,9 @@ ARG RESTY_CONFIG_OPTIONS_MORE="\
     --with-stream_ssl_preread_module \
     --add-module=ngx_http_substitutions_filter_module-${NGINX_SUBSTITUTIONS} \
     --add-module=lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_VERSION} \
+    --add-module=ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION} \
     --add-dynamic-module=nginx-http-auth-digest-${NGINX_DIGEST_AUTH} \
     --add-dynamic-module=ngx_http_geoip2_module-${GEOIP2_VERSION} \
-    --add-dynamic-module=ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION} \
     --add-dynamic-module=ngx_brotli \
     --add-dynamic-module=nginx-sticky-module-ng \
     --add-dynamic-module=ModSecurity-nginx-${MODSECURITY_VERSION} \
@@ -123,7 +123,7 @@ ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/bin
 # If OpenResty changes, these may need updating:
 #    /usr/local/openresty/bin/resty -e 'print(package.path)'
 #    /usr/local/openresty/bin/resty -e 'print(package.cpath)'
-ENV LUA_PATH="/usr/local/openresty/site/lualib/?.ljbc;/usr/local/openresty/site/lualib/?/init.ljbc;/usr/local/openresty/lualib/?.ljbc;/usr/local/openresty/lualib/?/init.ljbc;/usr/local/openresty/site/lualib/?.lua;/usr/local/openresty/site/lualib/?/init.lua;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua"
+ENV LUA_PATH="/usr/local/openresty/site/lualib/?.ljbc;/usr/local/openresty/site/lualib/?/init.ljbc;/usr/local/openresty/lualib/?.ljbc;/usr/local/openresty/lualib/?/init.ljbc;/usr/local/openresty/site/lualib/?.lua;/usr/local/openresty/site/lualib/?/init.lua;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua"
 ENV LUA_CPATH="/usr/local/openresty/site/lualib/?.so;/usr/local/openresty/lualib/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so"
 
 
@@ -292,7 +292,6 @@ RUN apk add --no-cache --virtual .build-deps \
     && ./configure \
         --prefix=/usr/local/openresty/luajit \
         --with-lua=/usr/local/openresty/luajit \
-        --lua-suffix=jit-2.1.0-beta3 \
         --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
     && make build \
     && make install \
