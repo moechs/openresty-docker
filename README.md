@@ -22,6 +22,7 @@ Alpine version of OpenResty with luarocks and many additional modules
 
 ### Installed lua modules
 * nginx-lua-prometheus
+* lua-resty-acme
 * lua-resty-aes
 * lua-resty-auto-ssl
 * lua-resty-cookie

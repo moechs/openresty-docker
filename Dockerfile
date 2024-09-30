@@ -279,6 +279,7 @@ RUN apk add --no-cache --virtual .build-deps \
         bungle/lua-resty-validation \
         bungle/lua-resty-jq \
         fffonion/lua-resty-openssl \
+        fffonion/lua-resty-acme \
         jkeys089/lua-resty-hmac \
         spacewander/lua-resty-rsa \
         c64bob/lua-resty-aes \
