@@ -21,31 +21,20 @@ Alpine version of OpenResty with luarocks and many additional modules
 * ModSecurity-nginx
 
 ### Installed lua modules
-* nginx-lua-prometheus
-* lua-resty-acme
-* lua-resty-aes
-* lua-resty-auto-ssl
-* lua-resty-cookie
-* lua-resty-etcd
-* lua-resty-hmac
-* lua-resty-iconv
-* lua-resty-ipmatcher
-* lua-resty-jit-uuid
-* lua-resty-jq
-* lua-resty-jwt
-* lua-resty-kafka
-* lua-resty-libcjson
-* lua-resty-ngxvar
-* lua-resty-openssl
-* lua-resty-prettycjson
-* lua-resty-redis-connector
-* lua-resty-requests
-* lua-resty-rsa
-* lua-resty-session
-* lua-resty-template
-* lua-resty-url
-* lua-resty-validation
-* lapis
+* anjia0532/lua-resty-redis-util
+* bungle/lua-resty-jq
+* bungle/lua-resty-prettycjson
+* bungle/lua-resty-session
+* bungle/lua-resty-template
+* bungle/lua-resty-validation
+* c64bob/lua-resty-aes
+* fffonion/lua-resty-acme
+* fffonion/lua-resty-openssl
+* jkeys089/lua-resty-hmac
+* knyar/nginx-lua-prometheus
+* spacewander/lua-resty-rsa
+* xiangnanscu/lua-resty-ipmatcher
+* xiaooloong/lua-resty-iconv
 
 
 Official OpenResty packaging source and scripts: [https://github.com/openresty/openresty-packaging.git](https://github.com/openresty/openresty-packaging.git)

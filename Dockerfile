@@ -8,22 +8,31 @@ ARG RESTY_IMAGE_TAG="3.20"
 
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
-LABEL maintainer="moechs <68768084+moechs@users.noreply.github.com>"
-
 ARG TZ=Asia/Shanghai
 
 # Docker Build Arguments
-ARG RESTY_VERSION="1.25.3.2"
-ARG RESTY_OPENSSL_VERSION="1.1.1w"
-ARG RESTY_OPENSSL_PATCH_VERSION="1.1.1f"
-ARG RESTY_OPENSSL_URL_BASE="https://www.openssl.org/source"
-ARG RESTY_PCRE_VERSION="8.45"
-ARG RESTY_PCRE_BUILD_OPTIONS="--enable-jit"
-ARG RESTY_PCRE_SHA256="4e6ce03e0336e8b4a3d6c2b70b1c5e18590a5673a98186da90d4f33c23defc09"
+ARG RESTY_VERSION="1.27.1.1"
+ARG RESTY_OPENSSL_VERSION="3.0.15"
+ARG RESTY_OPENSSL_PATCH_VERSION="3.0.15"
+ARG RESTY_OPENSSL_URL_BASE="https://github.com/openssl/openssl/releases/download/openssl-${RESTY_OPENSSL_VERSION}"
+ARG RESTY_OPENSSL_BUILD_OPTIONS="enable-camellia enable-seed enable-rfc3779 enable-cms enable-md2 enable-rc5 \
+        enable-weak-ssl-ciphers enable-ssl3 enable-ssl3-method enable-md2 enable-ktls enable-fips \
+        "
+ARG RESTY_PCRE_VERSION="10.44"
+ARG RESTY_PCRE_SHA256="86b9cb0aa3bcb7994faa88018292bc704cdbb708e785f7c74352ff6ea7d3175b"
+ARG RESTY_PCRE_BUILD_OPTIONS="--enable-jit --enable-pcre2grep-jit --disable-bsr-anycrlf --disable-coverage --disable-ebcdic --disable-fuzz-support \
+    --disable-jit-sealloc --disable-never-backslash-C --enable-newline-is-lf --enable-pcre2-8 --enable-pcre2-16 --enable-pcre2-32 \
+    --enable-pcre2grep-callout --enable-pcre2grep-callout-fork --disable-pcre2grep-libbz2 --disable-pcre2grep-libz --disable-pcre2test-libedit \
+    --enable-percent-zt --disable-rebuild-chartables --enable-shared --disable-static --disable-silent-rules --enable-unicode --disable-valgrind \
+    "
+ARG RESTY_PCRE_OPTIONS="--with-pcre-jit"
+
 ARG RESTY_J="1"
 
-ARG LUAJIT_VERSION=2.1-20231117.1
-ARG RESTY_LUAROCKS_VERSION="3.11.0"
+ARG LUAJIT_VERSION=2.1-20240815
+
+ARG RESTY_LUAJIT_OPTIONS="--with-luajit-xcflags='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT'"
+
 ARG NGINX_DIGEST_AUTH=1.0.0
 ARG NGINX_SUBSTITUTIONS=e12e965ac1837ca709709f9a26f572a54d83430e
 ARG NGINX_PROXY_CONNECT_VERSION=0.0.7
@@ -32,7 +41,6 @@ ARG GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
 ARG MODSECURITY_VERSION=1.0.3
 ARG MODSECURITY_LIB_VERSION=v3.0.12
 ARG OWASP_MODSECURITY_CRS_VERSION=v4.4.0
-ARG LUA_RESTY_GLOBAL_THROTTLE_VERSION=0.2.0
 ARG LUA_VAR_NGINX_MODULE_VERSION=0.5.3
 
 ARG RESTY_CONFIG_OPTIONS="\
@@ -75,11 +83,11 @@ ARG RESTY_CONFIG_OPTIONS="\
     --with-sha1-asm \
     --with-stream \
     --with-stream_ssl_module \
+    --with-stream_ssl_preread_module \
     --with-threads \
     "
 
 ARG RESTY_CONFIG_OPTIONS_MORE="\
-    --with-stream_ssl_preread_module \
     --add-module=ngx_http_substitutions_filter_module-${NGINX_SUBSTITUTIONS} \
     --add-module=lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_VERSION} \
     --add-module=ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION} \
@@ -90,34 +98,32 @@ ARG RESTY_CONFIG_OPTIONS_MORE="\
     --add-dynamic-module=ModSecurity-nginx-${MODSECURITY_VERSION} \
     "
 
-ARG LUAROCKS_PACKAGES="\
-    lua-resty-ngxvar \
-    lua-resty-redis-connector \
-    lua-resty-auto-ssl \
-    lua-resty-libcjson \
-    lua-resty-jit-uuid \
-    lua-resty-cookie \
-    lua-resty-session \
-    lua-resty-jwt \
-    lua-resty-url \
-    lua-resty-requests \
-    lua-resty-etcd \
-    lua-resty-kafka \
-    lapis \
+ARG LUA_RESTY_PACKAGES="\
+    anjia0532/lua-resty-redis-util \
+    bungle/lua-resty-jq \
+    bungle/lua-resty-prettycjson \
+    bungle/lua-resty-session \
+    bungle/lua-resty-template \
+    bungle/lua-resty-validation \
+    c64bob/lua-resty-aes \
+    fffonion/lua-resty-acme \
+    fffonion/lua-resty-openssl \
+    jkeys089/lua-resty-hmac \
+    knyar/nginx-lua-prometheus \
+    spacewander/lua-resty-rsa \
+    xiangnanscu/lua-resty-ipmatcher \
+    xiaooloong/lua-resty-iconv \
     "
-
-ARG RESTY_LUAJIT_OPTIONS="--with-luajit-xcflags='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT'"
-ARG RESTY_PCRE_OPTIONS="--with-pcre-jit"
 
 # These are not intended to be user-specified
 ARG _RESTY_CONFIG_DEPS="--with-pcre \
-    --with-cc-opt='-DNGX_LUA_ABORT_AT_PANIC -I/usr/local/openresty/pcre/include -I/usr/local/openresty/openssl/include' \
-    --with-ld-opt='-L/usr/local/openresty/pcre/lib -L/usr/local/openresty/openssl/lib -Wl,-rpath,/usr/local/openresty/pcre/lib:/usr/local/openresty/openssl/lib' \
+    --with-cc-opt='-DNGX_LUA_ABORT_AT_PANIC -I/usr/local/openresty/pcre2/include -I/usr/local/openresty/openssl3/include' \
+    --with-ld-opt='-L/usr/local/openresty/pcre2/lib -L/usr/local/openresty/openssl3/lib -Wl,-rpath,/usr/local/openresty/pcre2/lib:/usr/local/openresty/openssl3/lib' \
     "
 
 ENV TZ=${TZ}
 # Add additional binaries into PATH for convenience
-ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/bin
+ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/nginx/sbin:/usr/local/openresty/bin
 
 # Add LuaRocks paths
 # If OpenResty changes, these may need updating:
@@ -127,7 +133,7 @@ ENV LUA_PATH="/usr/local/openresty/site/lualib/?.ljbc;/usr/local/openresty/site/
 ENV LUA_CPATH="/usr/local/openresty/site/lualib/?.so;/usr/local/openresty/lualib/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so"
 
 
-RUN apk add --no-cache --virtual .build-deps \
+RUN cd /tmp && apk add --no-cache --virtual .build-deps \
         autoconf \
         automake \
         bash \
@@ -174,12 +180,15 @@ RUN apk add --no-cache --virtual .build-deps \
         wget \
         yajl \
         zlib \
-    && echo "/lib:/usr/lib:/usr/local/lib:/usr/local/openresty/luajit/lib:/usr/local/openresty/openssl/lib:/usr/local/openresty/pcre/lib" > /etc/ld-musl-$(uname -m).path \
-    && cd /tmp \
+    && echo "/lib:/usr/lib:/usr/local/lib:/usr/local/openresty/luajit/lib:/usr/local/openresty/openssl3/lib:/usr/local/openresty/pcre2/lib" > /etc/ld-musl-$(uname -m).path \
     && git config --global --add core.compression -1 \
     && curl -fSL "${RESTY_OPENSSL_URL_BASE}/openssl-${RESTY_OPENSSL_VERSION}.tar.gz" -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && cd openssl-${RESTY_OPENSSL_VERSION} \
+    && if [ $(echo ${RESTY_OPENSSL_VERSION} | cut -c 1-5) = "3.0.15" ] ; then \
+        echo 'patching OpenSSL 3.0.15 for OpenResty' \
+        && curl -s https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-${RESTY_OPENSSL_PATCH_VERSION}-sess_set_get_cb_yield.patch | patch -p1 ; \
+    fi \
     && if [ $(echo ${RESTY_OPENSSL_VERSION} | cut -c 1-5) = "1.1.1" ] ; then \
         echo 'patching OpenSSL 1.1.1 for OpenResty' \
         && curl -s https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-${RESTY_OPENSSL_PATCH_VERSION}-sess_set_get_cb_yield.patch | patch -p1 ; \
@@ -190,26 +199,23 @@ RUN apk add --no-cache --virtual .build-deps \
         && curl -s https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-${RESTY_OPENSSL_PATCH_VERSION}-sess_set_get_cb_yield.patch | patch -p1 ; \
     fi \
     && ./config \
-      no-threads shared zlib -g \
-      enable-ssl3 enable-ssl3-method \
-      --prefix=/usr/local/openresty/openssl \
+      shared zlib -g \
+      --prefix=/usr/local/openresty/openssl3 \
       --libdir=lib \
-      -Wl,-rpath,/usr/local/openresty/openssl/lib \
+      -Wl,-rpath,/usr/local/openresty/openssl3/lib \
     && make -j${RESTY_J} \
     && make -j${RESTY_J} install_sw \
     && cd /tmp \
-    && curl -fSL https://downloads.sourceforge.net/project/pcre/pcre/${RESTY_PCRE_VERSION}/pcre-${RESTY_PCRE_VERSION}.tar.gz -o pcre-${RESTY_PCRE_VERSION}.tar.gz \
-    && echo "${RESTY_PCRE_SHA256}  pcre-${RESTY_PCRE_VERSION}.tar.gz" | shasum -a 256 --check \
-    && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
-    && cd /tmp/pcre-${RESTY_PCRE_VERSION} \
-    && ./configure \
-        --prefix=/usr/local/openresty/pcre \
-        --disable-cpp \
-        --enable-utf \
-        --enable-unicode-properties \
+    && curl -fSL "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${RESTY_PCRE_VERSION}/pcre2-${RESTY_PCRE_VERSION}.tar.gz" -o pcre2-${RESTY_PCRE_VERSION}.tar.gz \
+    && echo "${RESTY_PCRE_SHA256}  pcre2-${RESTY_PCRE_VERSION}.tar.gz" | shasum -a 256 --check \
+    && tar xzf pcre2-${RESTY_PCRE_VERSION}.tar.gz \
+    && cd /tmp/pcre2-${RESTY_PCRE_VERSION} \
+    && CFLAGS="-g -O3" ./configure \
+        --prefix=/usr/local/openresty/pcre2 \
+        --libdir=/usr/local/openresty/pcre2/lib \
         ${RESTY_PCRE_BUILD_OPTIONS} \
-    && make -j${RESTY_J} \
-    && make -j${RESTY_J} install \
+    && CFLAGS="-g -O3" make -j${RESTY_J} \
+    && CFLAGS="-g -O3" make -j${RESTY_J} install \
     && cd /tmp \
     && git clone --depth=1 https://github.com/ssdeep-project/ssdeep \
     && cd ssdeep/ && ./bootstrap && ./configure && make && make install \
@@ -236,10 +242,10 @@ RUN apk add --no-cache --virtual .build-deps \
     && tar xzf ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION}.tar.gz \
     && cd bundle/nginx-$(echo $RESTY_VERSION|cut -d . -f 1-3) && patch -p1 < ../../ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION}/patch/${NGINX_PROXY_CONNECT_PATCH} && cd - \
     && git clone --depth=1 https://github.com/moechs/nginx-sticky-module-ng.git \
-    && git clone --depth=1 https://github.com/google/ngx_brotli.git \
-    && cd ngx_brotli && git submodule init && git submodule update && git submodule update && cd - \
+    && git clone --depth=100 https://github.com/google/ngx_brotli.git \
+    && cd ngx_brotli && git reset --hard 63ca02abdcf79c9e788d2eedcc388d2335902e52 && git submodule init && git submodule update && cd - \
     && cd bundle/LuaJIT-${LUAJIT_VERSION} \
-    && make -j8 TARGET_STRIP=@: CCDEBUG=-g XCFLAGS='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT' CC=cc PREFIX=/usr/local/openresty/luajit \
+    && make -j${RESTY_J} TARGET_STRIP=@: CCDEBUG=-g XCFLAGS='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT' CC=cc PREFIX=/usr/local/openresty/luajit \
     && make install PREFIX=/usr/local/openresty/luajit \
     && cd /tmp \
     && git clone -n https://github.com/SpiderLabs/ModSecurity \
@@ -252,7 +258,7 @@ RUN apk add --no-cache --virtual .build-deps \
     && ./configure \
       --prefix=/usr \
       --with-lua=/usr/local/openresty/luajit \
-      --with-pcre=/usr/local/openresty/pcre \
+      --with-pcre2=/usr/local/openresty/pcre2 \
       --with-yajl=/usr \
       --disable-doxygen-doc \
       --disable-doxygen-html \
@@ -271,33 +277,7 @@ RUN apk add --no-cache --virtual .build-deps \
     && setcap    cap_net_bind_service=+ep /usr/bin/dumb-init \
     && setcap -v cap_net_bind_service=+ep /usr/bin/dumb-init \
     && cd /tmp \
-    && opm get knyar/nginx-lua-prometheus \
-        xiangnanscu/lua-resty-ipmatcher \
-        xiaooloong/lua-resty-iconv \
-        bungle/lua-resty-prettycjson \
-        bungle/lua-resty-template \
-        bungle/lua-resty-validation \
-        bungle/lua-resty-jq \
-        fffonion/lua-resty-openssl \
-        fffonion/lua-resty-acme \
-        jkeys089/lua-resty-hmac \
-        spacewander/lua-resty-rsa \
-        c64bob/lua-resty-aes \
-    && curl -fSL https://github.com/ElvinEfendi/lua-resty-global-throttle/archive/v${LUA_RESTY_GLOBAL_THROTTLE_VERSION}.tar.gz -o lua-resty-global-throttle-${LUA_RESTY_GLOBAL_THROTTLE_VERSION}.tar.gz && tar xzf lua-resty-global-throttle-${LUA_RESTY_GLOBAL_THROTTLE_VERSION}.tar.gz \
-    && cd lua-resty-global-throttle-${LUA_RESTY_GLOBAL_THROTTLE_VERSION} \
-    && make DESTDIR=/usr/local/openresty LUA_LIB_DIR=site/lualib install \
-    && cd /tmp \
-    && curl -fSL https://luarocks.github.io/luarocks/releases/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
-    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
-    && cd luarocks-${RESTY_LUAROCKS_VERSION} \
-    && ./configure \
-        --prefix=/usr/local/openresty/luajit \
-        --with-lua=/usr/local/openresty/luajit \
-        --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
-    && make build \
-    && make install \
-    && cd /tmp \
-    && for pkg in ${LUAROCKS_PACKAGES};do luarocks install ${pkg};done \
+    && for pkg in ${LUA_RESTY_PACKAGES};do opm get ${pkg};done \
     && mkdir -p /etc/nginx \
     && cd /etc/nginx/ \
     && git clone -b ${OWASP_MODSECURITY_CRS_VERSION} https://github.com/coreruleset/coreruleset \
@@ -311,21 +291,14 @@ RUN apk add --no-cache --virtual .build-deps \
         /usr/lib/libmodsecurity.la \
         /usr/local/lib/libfuzzy.a \
         /usr/local/lib/libfuzzy.la \
-        /usr/local/openresty/luajit/lib/libluajit-5.1.a \
-        /usr/local/openresty/openssl/lib/libcrypto.a \
-        /usr/local/openresty/openssl/lib/libssl.a \
-        /usr/local/openresty/pcre/lib/libpcre.a \
-        /usr/local/openresty/pcre/lib/libpcre.la \
-        /usr/local/openresty/pcre/lib/libpcreposix.a \
-        /usr/local/openresty/pcre/lib/libpcreposix.la \
-    && cd /tmp && rm -rf \
-        openssl-${RESTY_OPENSSL_VERSION}.tar.gz openssl-${RESTY_OPENSSL_VERSION} \
-        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre-${RESTY_PCRE_VERSION} \
-        openresty-${RESTY_VERSION}.tar.gz openresty-${RESTY_VERSION} \
-        lua-resty-global-throttle-${LUA_RESTY_GLOBAL_THROTTLE_VERSION}.tar.gz lua-resty-global-throttle-${LUA_RESTY_GLOBAL_THROTTLE_VERSION} \
-        luarocks-${RESTY_LUAROCKS_VERSION} luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
-        ssdeep ModSecurity \
+        /usr/local/openresty/luajit/lib/*.a \
+        /usr/local/openresty/openssl3/lib/*.a \
+        /usr/local/openresty/openssl3/lib/*.la \
+        /usr/local/openresty/pcre2/lib/*.a \
+        /usr/local/openresty/pcre2/lib/*.la \
+    && cd /tmp \
     && apk del .build-deps \
+    && rm -rf /tmp/* \
     && rm -rf /var/cache/apk/* /etc/nginx/logs \
     && ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime \
     && ln -sf /dev/stdout /var/log/openresty/access.log \
