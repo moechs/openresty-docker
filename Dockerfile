@@ -4,7 +4,7 @@
 # https://github.com/openresty/docker-openresty
 
 ARG RESTY_IMAGE_BASE="alpine"
-ARG RESTY_IMAGE_TAG="3.20"
+ARG RESTY_IMAGE_TAG="3.21"
 
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
@@ -37,6 +37,7 @@ ARG NGINX_DIGEST_AUTH=1.0.0
 ARG NGINX_SUBSTITUTIONS=e12e965ac1837ca709709f9a26f572a54d83430e
 ARG NGINX_PROXY_CONNECT_VERSION=0.0.7
 ARG NGINX_PROXY_CONNECT_PATCH=proxy_connect_rewrite_102101.patch
+ARG NGINX_VTS_VERSION=0.2.3
 ARG GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
 ARG MODSECURITY_VERSION=1.0.3
 ARG MODSECURITY_LIB_VERSION=v3.0.12
@@ -96,6 +97,7 @@ ARG RESTY_CONFIG_OPTIONS_MORE="\
     --add-dynamic-module=ngx_brotli \
     --add-dynamic-module=nginx-sticky-module-ng \
     --add-dynamic-module=ModSecurity-nginx-${MODSECURITY_VERSION} \
+    --add-dynamic-module=nginx-module-vts-${NGINX_VTS_VERSION} \
     "
 
 ARG LUA_RESTY_PACKAGES="\
@@ -240,6 +242,8 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && tar xzf lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_VERSION}.tar.gz \
     && curl -fSL https://github.com/chobits/ngx_http_proxy_connect_module/archive/refs/tags/v${NGINX_PROXY_CONNECT_VERSION}.tar.gz -o ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION}.tar.gz \
     && tar xzf ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION}.tar.gz \
+    && curl -fSL https://github.com/vozlt/nginx-module-vts/archive/refs/tags/v${NGINX_VTS_VERSION}.tar.gz -o nginx-module-vts-${NGINX_VTS_VERSION}.tar.gz \
+    && tar xzf nginx-module-vts-${NGINX_VTS_VERSION}.tar.gz \
     && cd bundle/nginx-$(echo $RESTY_VERSION|cut -d . -f 1-3) && patch -p1 < ../../ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION}/patch/${NGINX_PROXY_CONNECT_PATCH} && cd - \
     && git clone --depth=1 https://github.com/moechs/nginx-sticky-module-ng.git \
     && git clone --depth=100 https://github.com/google/ngx_brotli.git \
