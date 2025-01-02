@@ -19,6 +19,7 @@ Alpine version of OpenResty with luarocks and many additional modules
 * nginx-sticky-module-ng
 * stream_ssl_preread_module
 * ModSecurity-nginx
+* nginx-module-vts
 
 ### Installed lua modules
 * anjia0532/lua-resty-redis-util
@@ -52,11 +53,6 @@ kind: Ingress
 metadata:
   annotations:
     nginx.ingress.kubernetes.io/custom-http-errors: "404,403,500,502,503"
-    nginx.ingress.kubernetes.io/server-snippet: |
-      location /error_page/ {
-        proxy_pass http://ingress-nginx-defaultbackend.ingress-nginx.svc;
-        proxy_set_header X-Forwarded-For $remote_addr;
-      }
 ```
 
 See also [https://github.com/tarampampam/error-pages](https://github.com/tarampampam/error-pages)
