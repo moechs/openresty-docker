@@ -40,7 +40,7 @@ ARG NGINX_PROXY_CONNECT_PATCH=proxy_connect_rewrite_102101.patch
 ARG NGINX_VTS_VERSION=0.2.3
 ARG GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
 ARG MODSECURITY_VERSION=1.0.3
-ARG MODSECURITY_LIB_VERSION=v3.0.12
+ARG MODSECURITY_LIB_VERSION=v3.0.13
 ARG OWASP_MODSECURITY_CRS_VERSION=v4.4.0
 ARG LUA_VAR_NGINX_MODULE_VERSION=0.5.3
 
@@ -119,13 +119,15 @@ ARG LUA_RESTY_PACKAGES="\
 
 # These are not intended to be user-specified
 ARG _RESTY_CONFIG_DEPS="--with-pcre \
-    --with-cc-opt='-DNGX_LUA_ABORT_AT_PANIC -I/usr/local/openresty/pcre2/include -I/usr/local/openresty/openssl3/include' \
-    --with-ld-opt='-L/usr/local/openresty/pcre2/lib -L/usr/local/openresty/openssl3/lib -Wl,-rpath,/usr/local/openresty/pcre2/lib:/usr/local/openresty/openssl3/lib' \
+    --with-cc-opt='-DNGX_LUA_ABORT_AT_PANIC -I/usr/local/openresty/pcre2/include -I/usr/local/openresty/openssl3/include -I/usr/local/modsecurity/include' \
+    --with-ld-opt='-L/usr/local/openresty/pcre2/lib -L/usr/local/openresty/openssl3/lib -Wl,-rpath,/usr/local/openresty/pcre2/lib:/usr/local/openresty/openssl3/lib:/usr/local/modsecurity/lib' \
     "
 
 ENV TZ=${TZ}
 # Add additional binaries into PATH for convenience
 ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/nginx/sbin:/usr/local/openresty/bin
+
+ENV PKG_CONFIG_PATH=/usr/local/openresty/luajit/lib/pkgconfig:/usr/local/openresty/openssl3/lib/pkgconfig:/usr/local/openresty/pcre2/lib/pkgconfig:/usr/local/modsecurity/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
 
 # Add LuaRocks paths
 # If OpenResty changes, these may need updating:
@@ -182,7 +184,7 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
         wget \
         yajl \
         zlib \
-    && echo "/lib:/usr/lib:/usr/local/lib:/usr/local/openresty/luajit/lib:/usr/local/openresty/openssl3/lib:/usr/local/openresty/pcre2/lib" > /etc/ld-musl-$(uname -m).path \
+    && echo "/lib:/usr/lib:/usr/local/lib:/usr/local/openresty/luajit/lib:/usr/local/openresty/openssl3/lib:/usr/local/openresty/pcre2/lib:/usr/local/modsecurity/lib" > /etc/ld-musl-$(uname -m).path \
     && git config --global --add core.compression -1 \
     && curl -fSL "${RESTY_OPENSSL_URL_BASE}/openssl-${RESTY_OPENSSL_VERSION}.tar.gz" -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
@@ -238,6 +240,7 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && tar xzf ngx_http_geoip2_module-${GEOIP2_VERSION}.tar.gz \
     && curl -fSL https://github.com/SpiderLabs/ModSecurity-nginx/archive/v${MODSECURITY_VERSION}.tar.gz -o ModSecurity-nginx-${MODSECURITY_VERSION}.tar.gz \
     && tar xzf ModSecurity-nginx-${MODSECURITY_VERSION}.tar.gz \
+    && sed -i 's#printf("hello")#msc_init()#g' ModSecurity-nginx-${MODSECURITY_VERSION}/config \
     && curl -fSL https://github.com/api7/lua-var-nginx-module/archive/refs/tags/v${LUA_VAR_NGINX_MODULE_VERSION}.tar.gz -o lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_VERSION}.tar.gz \
     && tar xzf lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_VERSION}.tar.gz \
     && curl -fSL https://github.com/chobits/ngx_http_proxy_connect_module/archive/refs/tags/v${NGINX_PROXY_CONNECT_VERSION}.tar.gz -o ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION}.tar.gz \
@@ -256,11 +259,11 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && cd ModSecurity/ \
     && git checkout ${MODSECURITY_LIB_VERSION} \
     && git submodule init && git submodule update \
-    && sh build.sh \
     && sed -i '115i LUA_CFLAGS=\"${LUA_CFLAGS} -DWITH_LUA_JIT_2_1\"' build/lua.m4 \
     && sed -i '117i AC_SUBST(LUA_CFLAGS)' build/lua.m4 \
+    && sed -i '10i LUA_POSSIBLE_LIB_NAMES="luajit"' build/lua.m4 \
+    && sh build.sh \
     && ./configure \
-      --prefix=/usr \
       --with-lua=/usr/local/openresty/luajit \
       --with-pcre2=/usr/local/openresty/pcre2 \
       --with-yajl=/usr \
@@ -273,6 +276,7 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && cp unicode.mapping /etc/nginx/modsecurity/unicode.mapping \
     && cd /tmp/openresty-${RESTY_VERSION} \
     && sed -i 's#$ngx_prefix = "$prefix/nginx";#$ngx_prefix = "/etc/nginx";#g' configure \
+    && echo ./configure -j${RESTY_J} ${_RESTY_CONFIG_DEPS} ${RESTY_CONFIG_OPTIONS} ${RESTY_CONFIG_OPTIONS_MORE} ${RESTY_LUAJIT_OPTIONS} ${RESTY_PCRE_OPTIONS} \
     && eval ./configure -j${RESTY_J} ${_RESTY_CONFIG_DEPS} ${RESTY_CONFIG_OPTIONS} ${RESTY_CONFIG_OPTIONS_MORE} ${RESTY_LUAJIT_OPTIONS} ${RESTY_PCRE_OPTIONS} \
     && make -j${RESTY_J} \
     && make -j${RESTY_J} install \
@@ -291,8 +295,8 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && mv rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf \
     && rm -rf .git* .*.yml *.md docs tests INSTALL KNOWN_BUGS LICENSE util/regression-tests \
     && rm -rf /etc/nginx/*_temp /etc/nginx/conf/* /etc/nginx/html \
-    && rm -f /usr/lib/libmodsecurity.a \
-        /usr/lib/libmodsecurity.la \
+    && rm -f /usr/local/modsecurity/lib/libmodsecurity.a \
+        /usr/local/modsecurity/lib/libmodsecurity.la \
         /usr/local/lib/libfuzzy.a \
         /usr/local/lib/libfuzzy.la \
         /usr/local/openresty/luajit/lib/*.a \
