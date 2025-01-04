@@ -12,12 +12,6 @@ ARG TZ=Asia/Shanghai
 
 # Docker Build Arguments
 ARG RESTY_VERSION="1.27.1.1"
-ARG RESTY_OPENSSL_VERSION="3.0.15"
-ARG RESTY_OPENSSL_PATCH_VERSION="3.0.15"
-ARG RESTY_OPENSSL_URL_BASE="https://github.com/openssl/openssl/releases/download/openssl-${RESTY_OPENSSL_VERSION}"
-ARG RESTY_OPENSSL_BUILD_OPTIONS="enable-camellia enable-seed enable-rfc3779 enable-cms enable-md2 enable-rc5 \
-        enable-weak-ssl-ciphers enable-ssl3 enable-ssl3-method enable-md2 enable-ktls enable-fips \
-        "
 ARG RESTY_PCRE_VERSION="10.44"
 ARG RESTY_PCRE_SHA256="86b9cb0aa3bcb7994faa88018292bc704cdbb708e785f7c74352ff6ea7d3175b"
 ARG RESTY_PCRE_BUILD_OPTIONS="--enable-jit --enable-pcre2grep-jit --disable-bsr-anycrlf --disable-coverage --disable-ebcdic --disable-fuzz-support \
@@ -119,15 +113,15 @@ ARG LUA_RESTY_PACKAGES="\
 
 # These are not intended to be user-specified
 ARG _RESTY_CONFIG_DEPS="--with-pcre \
-    --with-cc-opt='-DNGX_LUA_ABORT_AT_PANIC -I/usr/local/openresty/pcre2/include -I/usr/local/openresty/openssl3/include -I/usr/local/modsecurity/include' \
-    --with-ld-opt='-L/usr/local/openresty/pcre2/lib -L/usr/local/openresty/openssl3/lib -Wl,-rpath,/usr/local/openresty/pcre2/lib:/usr/local/openresty/openssl3/lib:/usr/local/modsecurity/lib' \
+    --with-cc-opt='-DNGX_LUA_ABORT_AT_PANIC -I/usr/local/openresty/pcre2/include -I/usr/local/modsecurity/include' \
+    --with-ld-opt='-L/usr/local/openresty/pcre2/lib -Wl,-rpath,/usr/local/openresty/pcre2/lib:/usr/local/modsecurity/lib' \
     "
 
 ENV TZ=${TZ}
 # Add additional binaries into PATH for convenience
 ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/nginx/sbin:/usr/local/openresty/bin
 
-ENV PKG_CONFIG_PATH=/usr/local/openresty/luajit/lib/pkgconfig:/usr/local/openresty/openssl3/lib/pkgconfig:/usr/local/openresty/pcre2/lib/pkgconfig:/usr/local/modsecurity/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
+ENV PKG_CONFIG_PATH=/usr/local/openresty/luajit/lib/pkgconfig:/usr/local/openresty/pcre2/lib/pkgconfig:/usr/local/modsecurity/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
 
 # Add LuaRocks paths
 # If OpenResty changes, these may need updating:
@@ -156,6 +150,7 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
         linux-headers \
         lmdb \
         make \
+        openssl-dev \
         perl-dev \
         readline-dev \
         yajl-dev \
@@ -184,32 +179,7 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
         wget \
         yajl \
         zlib \
-    && echo "/lib:/usr/lib:/usr/local/lib:/usr/local/openresty/luajit/lib:/usr/local/openresty/openssl3/lib:/usr/local/openresty/pcre2/lib:/usr/local/modsecurity/lib" > /etc/ld-musl-$(uname -m).path \
     && git config --global --add core.compression -1 \
-    && curl -fSL "${RESTY_OPENSSL_URL_BASE}/openssl-${RESTY_OPENSSL_VERSION}.tar.gz" -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
-    && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
-    && cd openssl-${RESTY_OPENSSL_VERSION} \
-    && if [ $(echo ${RESTY_OPENSSL_VERSION} | cut -c 1-5) = "3.0.15" ] ; then \
-        echo 'patching OpenSSL 3.0.15 for OpenResty' \
-        && curl -s https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-${RESTY_OPENSSL_PATCH_VERSION}-sess_set_get_cb_yield.patch | patch -p1 ; \
-    fi \
-    && if [ $(echo ${RESTY_OPENSSL_VERSION} | cut -c 1-5) = "1.1.1" ] ; then \
-        echo 'patching OpenSSL 1.1.1 for OpenResty' \
-        && curl -s https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-${RESTY_OPENSSL_PATCH_VERSION}-sess_set_get_cb_yield.patch | patch -p1 ; \
-    fi \
-    && if [ $(echo ${RESTY_OPENSSL_VERSION} | cut -c 1-5) = "1.1.0" ] ; then \
-        echo 'patching OpenSSL 1.1.0 for OpenResty' \
-        && curl -s https://raw.githubusercontent.com/openresty/openresty/ed328977028c3ec3033bc25873ee360056e247cd/patches/openssl-1.1.0j-parallel_build_fix.patch | patch -p1 \
-        && curl -s https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-${RESTY_OPENSSL_PATCH_VERSION}-sess_set_get_cb_yield.patch | patch -p1 ; \
-    fi \
-    && ./config \
-      shared zlib -g \
-      --prefix=/usr/local/openresty/openssl3 \
-      --libdir=lib \
-      -Wl,-rpath,/usr/local/openresty/openssl3/lib \
-    && make -j${RESTY_J} \
-    && make -j${RESTY_J} install_sw \
-    && cd /tmp \
     && curl -fSL "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${RESTY_PCRE_VERSION}/pcre2-${RESTY_PCRE_VERSION}.tar.gz" -o pcre2-${RESTY_PCRE_VERSION}.tar.gz \
     && echo "${RESTY_PCRE_SHA256}  pcre2-${RESTY_PCRE_VERSION}.tar.gz" | shasum -a 256 --check \
     && tar xzf pcre2-${RESTY_PCRE_VERSION}.tar.gz \
@@ -300,8 +270,6 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
         /usr/local/lib/libfuzzy.a \
         /usr/local/lib/libfuzzy.la \
         /usr/local/openresty/luajit/lib/*.a \
-        /usr/local/openresty/openssl3/lib/*.a \
-        /usr/local/openresty/openssl3/lib/*.la \
         /usr/local/openresty/pcre2/lib/*.a \
         /usr/local/openresty/pcre2/lib/*.la \
     && cd /tmp \
