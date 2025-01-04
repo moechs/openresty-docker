@@ -21,7 +21,7 @@ ARG RESTY_PCRE_BUILD_OPTIONS="--enable-jit --enable-pcre2grep-jit --disable-bsr-
     "
 ARG RESTY_PCRE_OPTIONS="--with-pcre-jit"
 
-ARG RESTY_J="1"
+ARG RESTY_J="2"
 
 ARG LUAJIT_VERSION=2.1-20240815
 
