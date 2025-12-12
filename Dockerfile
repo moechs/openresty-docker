@@ -4,14 +4,14 @@
 # https://github.com/openresty/docker-openresty
 
 ARG RESTY_IMAGE_BASE="alpine"
-ARG RESTY_IMAGE_TAG="3.21"
+ARG RESTY_IMAGE_TAG="3.22.2"
 
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 ARG TZ=Asia/Shanghai
 
 # Docker Build Arguments
-ARG RESTY_VERSION="1.27.1.1"
+ARG RESTY_VERSION="1.27.1.2"
 ARG RESTY_PCRE_VERSION="10.44"
 ARG RESTY_PCRE_SHA256="86b9cb0aa3bcb7994faa88018292bc704cdbb708e785f7c74352ff6ea7d3175b"
 ARG RESTY_PCRE_BUILD_OPTIONS="--enable-jit --enable-pcre2grep-jit --disable-bsr-anycrlf --disable-coverage --disable-ebcdic --disable-fuzz-support \
@@ -23,7 +23,7 @@ ARG RESTY_PCRE_OPTIONS="--with-pcre-jit"
 
 ARG RESTY_J="2"
 
-ARG LUAJIT_VERSION=2.1-20240815
+ARG LUAJIT_VERSION=2.1-20250117
 
 ARG RESTY_LUAJIT_OPTIONS="--with-luajit-xcflags='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT'"
 

@@ -38,7 +38,9 @@ Alpine version of OpenResty with luarocks and many additional modules
 * xiaooloong/lua-resty-iconv
 
 
-Official OpenResty packaging source and scripts: [https://github.com/openresty/openresty-packaging.git](https://github.com/openresty/openresty-packaging.git)
+Official OpenResty packaging source and scripts:
+* [https://github.com/openresty/openresty-packaging.git](https://github.com/openresty/openresty-packaging.git)
+* [https://github.com/openresty/docker-openresty.git](https://github.com/openresty/docker-openresty.git)
 
 ----------------
 

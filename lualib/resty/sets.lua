@@ -25,11 +25,12 @@ local function load_config(config_file)
 end
 
 local function save_config(config_file, data)
-    local jsondata, err = prettycjson(data, "\n", "    ") .. "\n"
+    local jsondata, err = prettycjson(data, "\n", "    ")
     if err then
         ngx.log(ngx.ERR, err)
         return false, err
     end
+    jsondata = (jsondata or "{}") .. "\n"
     local file, err_open = io.open(config_file, "w")
     if err_open then
         ngx.log(ngx.ERR, "failed to open " .. config_file .. ": ", err_open)
@@ -45,7 +46,7 @@ local function save_config(config_file, data)
 end
 
 local function safe_set(key, value)
-    local ok, err sets:safe_set(key, value)
+    local ok, err = sets:safe_set(key, value)
     if err then
         ngx.log(ngx.ERR, "failed to set key " .. key .. ": ", err)
     end
@@ -98,8 +99,9 @@ function _M:load()
         for key, value in pairs(data) do
             safe_set(key, value)
         end
+        return save_config(config_file, data)
     end
-    return save_config(config_file, data)
+    return false, err
 end
 
 function _M:dump(max_count)
@@ -112,11 +114,12 @@ end
 
 function _M:print(max_count)
     local data = self:dump(max_count or 1024)
-    local jsondata, err = prettycjson(data, "\n", "    ") .. "\n"
+    local jsondata, err = prettycjson(data, "\n", "    ")
     if err then
         ngx.log(ngx.ERR, err)
     end
-    return jsondata or "{}"
+    jsondata = (jsondata or "{}") .. "\n"
+    return jsondata
 end
 
 function _M:echo(max_count)
