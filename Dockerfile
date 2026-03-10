@@ -4,16 +4,25 @@
 # https://github.com/openresty/docker-openresty
 
 ARG RESTY_IMAGE_BASE="alpine"
-ARG RESTY_IMAGE_TAG="3.22.2"
+ARG RESTY_IMAGE_TAG="3.22.3"
 
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 ARG TZ=Asia/Shanghai
 
 # Docker Build Arguments
-ARG RESTY_VERSION="1.27.1.2"
-ARG RESTY_PCRE_VERSION="10.44"
-ARG RESTY_PCRE_SHA256="86b9cb0aa3bcb7994faa88018292bc704cdbb708e785f7c74352ff6ea7d3175b"
+ARG RESTY_VERSION="1.29.2.1"
+
+ARG RESTY_OPENSSL_VERSION="3.5.5"
+ARG RESTY_OPENSSL_PATCH_VERSION="3.5.5"
+ARG RESTY_OPENSSL_URL_BASE="https://github.com/openssl/openssl/releases/download/openssl-${RESTY_OPENSSL_VERSION}"
+# LEGACY:  "https://www.openssl.org/source/old/1.1.1"
+ARG RESTY_OPENSSL_BUILD_OPTIONS="enable-camellia enable-seed enable-rfc3779 enable-cms enable-md2 enable-rc5 \
+        enable-weak-ssl-ciphers enable-ssl3 enable-ssl3-method enable-md2 enable-ktls enable-fips \
+        "
+
+ARG RESTY_PCRE_VERSION="10.47"
+ARG RESTY_PCRE_SHA256="c08ae2388ef333e8403e670ad70c0a11f1eed021fd88308d7e02f596fcd9dc16"
 ARG RESTY_PCRE_BUILD_OPTIONS="--enable-jit --enable-pcre2grep-jit --disable-bsr-anycrlf --disable-coverage --disable-ebcdic --disable-fuzz-support \
     --disable-jit-sealloc --disable-never-backslash-C --enable-newline-is-lf --enable-pcre2-8 --enable-pcre2-16 --enable-pcre2-32 \
     --enable-pcre2grep-callout --enable-pcre2grep-callout-fork --disable-pcre2grep-libbz2 --disable-pcre2grep-libz --disable-pcre2test-libedit \
@@ -23,7 +32,7 @@ ARG RESTY_PCRE_OPTIONS="--with-pcre-jit"
 
 ARG RESTY_J="2"
 
-ARG LUAJIT_VERSION=2.1-20250117
+ARG LUAJIT_VERSION=2.1-20251030
 
 ARG RESTY_LUAJIT_OPTIONS="--with-luajit-xcflags='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT'"
 
@@ -31,11 +40,11 @@ ARG NGINX_DIGEST_AUTH=1.0.0
 ARG NGINX_SUBSTITUTIONS=e12e965ac1837ca709709f9a26f572a54d83430e
 ARG NGINX_PROXY_CONNECT_VERSION=0.0.7
 ARG NGINX_PROXY_CONNECT_PATCH=proxy_connect_rewrite_102101.patch
-ARG NGINX_VTS_VERSION=0.2.3
+ARG NGINX_VTS_VERSION=0.2.5
 ARG GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
-ARG MODSECURITY_VERSION=1.0.3
-ARG MODSECURITY_LIB_VERSION=v3.0.13
-ARG OWASP_MODSECURITY_CRS_VERSION=v4.4.0
+ARG MODSECURITY_VERSION=1.0.4
+ARG MODSECURITY_LIB_VERSION=v3.0.14
+ARG OWASP_MODSECURITY_CRS_VERSION=v4.24.1
 ARG LUA_VAR_NGINX_MODULE_VERSION=0.5.3
 
 ARG RESTY_CONFIG_OPTIONS="\
@@ -113,8 +122,8 @@ ARG LUA_RESTY_PACKAGES="\
 
 # These are not intended to be user-specified
 ARG _RESTY_CONFIG_DEPS="--with-pcre \
-    --with-cc-opt='-DNGX_LUA_ABORT_AT_PANIC -I/usr/local/openresty/pcre2/include -I/usr/local/modsecurity/include' \
-    --with-ld-opt='-L/usr/local/openresty/pcre2/lib -Wl,-rpath,/usr/local/openresty/pcre2/lib:/usr/local/modsecurity/lib' \
+    --with-cc-opt='-DNGX_LUA_ABORT_AT_PANIC -I/usr/local/openresty/pcre2/include -I/usr/local/openresty/openssl3/include -I/usr/local/modsecurity/include' \
+    --with-ld-opt='-L/usr/local/openresty/pcre2/lib -L/usr/local/openresty/openssl3/lib -L/usr/local/modsecurity/lib -Wl,-rpath,/usr/local/openresty/pcre2/lib:/usr/local/openresty/openssl3/lib:/usr/local/modsecurity/lib' \
     "
 
 ENV TZ=${TZ}
@@ -136,6 +145,7 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
         automake \
         bash \
         build-base \
+        binutils \
         coreutils \
         curl-dev \
         gawk \
@@ -150,7 +160,6 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
         linux-headers \
         lmdb \
         make \
-        openssl-dev \
         perl-dev \
         readline-dev \
         yajl-dev \
@@ -171,7 +180,6 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
         libmaxminddb-libs \
         libstdc++ \
         libxslt \
-        openssl \
         perl \
         tzdata \
         unzip \
@@ -180,6 +188,19 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
         yajl \
         zlib \
     && git config --global --add core.compression -1 \
+    && curl -fSL "${RESTY_OPENSSL_URL_BASE}/openssl-${RESTY_OPENSSL_VERSION}.tar.gz" -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
+    && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
+    && cd openssl-${RESTY_OPENSSL_VERSION} \
+    && curl -s https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-${RESTY_OPENSSL_PATCH_VERSION}-sess_set_get_cb_yield.patch | patch -p1 \
+    && ./config \
+      shared zlib -g \
+      --prefix=/usr/local/openresty/openssl3 \
+      --libdir=lib \
+      -Wl,-rpath,/usr/local/openresty/openssl3/lib \
+      ${RESTY_OPENSSL_BUILD_OPTIONS} \
+    && make -j${RESTY_J} \
+    && make -j${RESTY_J} install_sw \
+    && cd /tmp \
     && curl -fSL "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${RESTY_PCRE_VERSION}/pcre2-${RESTY_PCRE_VERSION}.tar.gz" -o pcre2-${RESTY_PCRE_VERSION}.tar.gz \
     && echo "${RESTY_PCRE_SHA256}  pcre2-${RESTY_PCRE_VERSION}.tar.gz" | shasum -a 256 --check \
     && tar xzf pcre2-${RESTY_PCRE_VERSION}.tar.gz \
@@ -225,7 +246,7 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && make -j${RESTY_J} TARGET_STRIP=@: CCDEBUG=-g XCFLAGS='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT' CC=cc PREFIX=/usr/local/openresty/luajit \
     && make install PREFIX=/usr/local/openresty/luajit \
     && cd /tmp \
-    && git clone -n https://github.com/SpiderLabs/ModSecurity \
+    && git clone -n https://github.com/owasp-modsecurity/ModSecurity.git \
     && cd ModSecurity/ \
     && git checkout ${MODSECURITY_LIB_VERSION} \
     && git submodule init && git submodule update \
@@ -265,13 +286,26 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && mv rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf \
     && rm -rf .git* .*.yml *.md docs tests INSTALL KNOWN_BUGS LICENSE util/regression-tests \
     && rm -rf /etc/nginx/*_temp /etc/nginx/conf/* /etc/nginx/html \
+        /usr/local/modsecurity/include \
+        /usr/local/openresty/openssl3/include \
+        /usr/local/openresty/pcre2/bin \
+        /usr/local/openresty/pcre2/share \
+        /usr/local/openresty/luajit/share/man \
     && rm -f /usr/local/modsecurity/lib/libmodsecurity.a \
         /usr/local/modsecurity/lib/libmodsecurity.la \
+        /usr/local/openresty/openssl3/bin/c_rehash \
+        /usr/local/openresty/openssl3/lib/*.a \
         /usr/local/lib/libfuzzy.a \
         /usr/local/lib/libfuzzy.la \
         /usr/local/openresty/luajit/lib/*.a \
         /usr/local/openresty/pcre2/lib/*.a \
         /usr/local/openresty/pcre2/lib/*.la \
+    && strip --strip-unneeded /usr/sbin/nginx \
+    && find /usr/local/modsecurity -type f -perm -u+x -exec strip --strip-unneeded '{}' \; \
+    && find /usr/local/openresty/openssl3 -type f -perm -u+x -exec strip --strip-unneeded '{}' \; \
+    && find /usr/local/openresty/pcre2 -type f -perm -u+x -exec strip --strip-unneeded '{}' \; \
+    && find /usr/local/openresty/luajit -type f -perm -u+x -exec strip --strip-unneeded '{}' \; \
+    && find /usr/local/openresty/nginx -type f -perm -u+x -exec strip --strip-unneeded '{}' \; \
     && cd /tmp \
     && apk del .build-deps \
     && rm -rf /tmp/* \
