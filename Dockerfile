@@ -223,6 +223,7 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && sed -i 's#openresty#OWS#g' bundle/nginx-*/src/http/ngx_http_special_response.c \
     && sed -i 's#server: nginx#server: ows#g' bundle/nginx-*/src/http/v2/ngx_http_v2_filter_module.c \
     && sed -i 's#nginx\[8\] = "\\x87\\x3d\\x65\\xaa\\xc2\\xa1\\x3e\\xbf"#nginx\[4\] = "\\x83\\xd5\\xcb\\x77"#g' bundle/nginx-*/src/http/v2/ngx_http_v2_filter_module.c \
+    && sed -i 's#nginx\[8\] = { 0x87, 0x3d, 0x65, 0xaa, 0xc2, 0xa1, 0x3e, 0xbf}#nginx\[4\] = { 0x83, 0xd5, 0xcb, 0x77}#g' bundle/nginx-*/src/http/v2/ngx_http_v2_filter_module.c \
     && curl -fSL https://github.com/atomx/nginx-http-auth-digest/archive/v${NGINX_DIGEST_AUTH}.tar.gz -o nginx-http-auth-digest-${NGINX_DIGEST_AUTH}.tar.gz \
     && tar xzf nginx-http-auth-digest-${NGINX_DIGEST_AUTH}.tar.gz \
     && curl -fSL https://github.com/yaoweibin/ngx_http_substitutions_filter_module/archive/${NGINX_SUBSTITUTIONS}.tar.gz -o ngx_http_substitutions_filter_module-${NGINX_SUBSTITUTIONS}.tar.gz \
