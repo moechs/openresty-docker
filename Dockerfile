@@ -4,16 +4,16 @@
 # https://github.com/openresty/docker-openresty
 
 ARG RESTY_IMAGE_BASE="alpine"
-ARG RESTY_IMAGE_TAG="3.22.3"
+ARG RESTY_IMAGE_TAG="3.23.4"
 
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 ARG TZ=Asia/Shanghai
 
 # Docker Build Arguments
-ARG RESTY_VERSION="1.29.2.3"
+ARG RESTY_VERSION="1.29.2.4"
 
-ARG RESTY_OPENSSL_VERSION="3.5.5"
+ARG RESTY_OPENSSL_VERSION="3.5.6"
 ARG RESTY_OPENSSL_PATCH_VERSION="3.5.5"
 ARG RESTY_OPENSSL_URL_BASE="https://github.com/openssl/openssl/releases/download/openssl-${RESTY_OPENSSL_VERSION}"
 # LEGACY:  "https://www.openssl.org/source/old/1.1.1"
@@ -30,9 +30,9 @@ ARG RESTY_PCRE_BUILD_OPTIONS="--enable-jit --enable-pcre2grep-jit --disable-bsr-
     "
 ARG RESTY_PCRE_OPTIONS="--with-pcre-jit"
 
-ARG RESTY_J="2"
+ARG RESTY_J="1"
 
-ARG LUAJIT_VERSION=2.1-20260311
+ARG LUAJIT_VERSION=2.1-20260415
 
 ARG RESTY_LUAJIT_OPTIONS="--with-luajit-xcflags='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT'"
 
@@ -43,7 +43,7 @@ ARG NGINX_PROXY_CONNECT_PATCH=proxy_connect_rewrite_102101.patch
 ARG NGINX_VTS_VERSION=0.2.5
 ARG GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
 ARG MODSECURITY_VERSION=1.0.4
-ARG MODSECURITY_LIB_VERSION=v3.0.14
+ARG MODSECURITY_LIB_VERSION=v3.0.15
 ARG OWASP_MODSECURITY_CRS_VERSION=v4.24.1
 ARG LUA_VAR_NGINX_MODULE_VERSION=0.5.3
 
@@ -250,7 +250,7 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && git clone -n https://github.com/owasp-modsecurity/ModSecurity.git \
     && cd ModSecurity/ \
     && git checkout ${MODSECURITY_LIB_VERSION} \
-    && git submodule init && git submodule update \
+    && git submodule update --init --recursive \
     && sed -i '115i LUA_CFLAGS=\"${LUA_CFLAGS} -DWITH_LUA_JIT_2_1\"' build/lua.m4 \
     && sed -i '117i AC_SUBST(LUA_CFLAGS)' build/lua.m4 \
     && sed -i '10i LUA_POSSIBLE_LIB_NAMES="luajit"' build/lua.m4 \
