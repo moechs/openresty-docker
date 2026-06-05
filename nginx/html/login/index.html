@@ -1,67 +1,173 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="zh-CN">
 <head>
-	<title>请先登录</title>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="icon" type="image/png" href="images/icons/favicon.ico"/>
-	<link rel="stylesheet" type="text/css" href="vendor/bootstrap/css/bootstrap.min.css">
-	<link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.7.0/css/font-awesome.min.css">
-	<link rel="stylesheet" type="text/css" href="fonts/Linearicons-Free-v1.0.0/icon-font.min.css">
-	<link rel="stylesheet" type="text/css" href="vendor/animate/animate.css">
-	<link rel="stylesheet" type="text/css" href="vendor/css-hamburgers/hamburgers.min.css">
-	<link rel="stylesheet" type="text/css" href="vendor/animsition/css/animsition.min.css">
-	<link rel="stylesheet" type="text/css" href="vendor/select2/select2.min.css">
-	<link rel="stylesheet" type="text/css" href="vendor/daterangepicker/daterangepicker.css">
-	<link rel="stylesheet" type="text/css" href="css/util.css">
-	<link rel="stylesheet" type="text/css" href="css/main.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Login</title>
+
+<style>
+/* ========== 主题变量 ========== */
+:root {
+  --bg: #f6f7fb;
+  --card: rgba(255, 255, 255, 0.75);
+  --text: #1f2937;
+  --muted: #6b7280;
+  --primary: #2563eb;
+  --border: rgba(0,0,0,0.08);
+  --shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+/* 自动深色模式 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --card: rgba(17, 24, 39, 0.72);
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --primary: #60a5fa;
+    --border: rgba(255,255,255,0.08);
+    --shadow: 0 10px 30px rgba(0,0,0,0.45);
+  }
+}
+
+/* ========== 基础布局 ========== */
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top left, #3b82f6 0%, transparent 35%),
+              radial-gradient(circle at bottom right, #8b5cf6 0%, transparent 40%),
+              var(--bg);
+  color: var(--text);
+}
+
+/* ========== 登录卡片 ========== */
+.login-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+}
+
+.card {
+  backdrop-filter: blur(14px);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+
+/* ========== 标题 ========== */
+h1 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0 0 24px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ========== 表单 ========== */
+.form-group {
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--muted);
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  transition: 0.2s;
+}
+
+input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+/* ========== 按钮 ========== */
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-top: 8px;
+}
+
+button:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+/* ========== 小字提示 ========== */
+.footer {
+  margin-top: 14px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* ========== 响应式优化 ========== */
+@media (max-width: 480px) {
+  .card {
+    padding: 20px;
+    border-radius: 12px;
+  }
+}
+</style>
 </head>
+
 <body>
-	<div class="limiter">
-		<div class="container-login100">
-			<div class="wrap-login100 p-l-55 p-r-55 p-t-65 p-b-50">
-				<form action="/login" method="post" class="login100-form validate-form">
-					<span class="login100-form-title p-b-33">
-						账号登录
-					</span>
 
-					<div class="wrap-input100 validate-input" data-validate = "请输入正确的用户名，例如: zhangsan">
-						<input class="input100" type="text" id="username" name="username" placeholder="用户名">
-						<span class="focus-input100-1"></span>
-						<span class="focus-input100-2"></span>
-					</div>
+<div class="login-container">
+  <div class="card">
+    <h1>系统登录</h1>
+    <p class="subtitle">LDAP 认证访问控制</p>
 
-					<div class="wrap-input100 rs1 validate-input" data-validate="请输入密码">
-						<input class="input100" type="password" id="password" name="password" placeholder="密码">
-						<span class="focus-input100-1"></span>
-						<span class="focus-input100-2"></span>
-					</div>
+    <form method="POST" action="/login">
+      <div class="form-group">
+        <label>用户名</label>
+        <input type="text" name="username" autocomplete="username" required />
+      </div>
 
-					<div class="container-login100-form-btn m-t-20">
-						<button class="login100-form-btn">
-							登录
-						</button>
-					</div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" name="password" autocomplete="current-password" required />
+      </div>
 
-					<div class="text-center p-t-45 p-b-4">
-						<span class="txt1">
-							请使用域账号登录
-						</span>
-					</div>
-				</form>
-			</div>
-		</div>
-	</div>
-	<script src="vendor/jquery/jquery-3.2.1.min.js"></script>
-	<script src="vendor/jquery/jquery.cookie.min.js"></script>
-	<script src="vendor/jquery/jquery.base64.js"></script>
-	<script src="vendor/animsition/js/animsition.min.js"></script>
-	<script src="vendor/bootstrap/js/popper.js"></script>
-	<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
-	<script src="vendor/select2/select2.min.js"></script>
-	<script src="vendor/daterangepicker/moment.min.js"></script>
-	<script src="vendor/daterangepicker/daterangepicker.js"></script>
-	<script src="vendor/countdowntime/countdowntime.js"></script>
-	<script src="js/main.js"></script>
+      <button type="submit">登录</button>
+    </form>
+
+    <div class="footer">
+      仅授权用户可访问受保护资源
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -11,7 +11,7 @@ FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 ARG TZ=Asia/Shanghai
 
 # Docker Build Arguments
-ARG RESTY_VERSION="1.29.2.5"
+ARG RESTY_VERSION="1.31.1.1"
 
 ARG RESTY_OPENSSL_VERSION="3.5.6"
 ARG RESTY_OPENSSL_PATCH_VERSION="3.5.5"
@@ -36,16 +36,12 @@ ARG LUAJIT_VERSION=2.1-20260415
 
 ARG RESTY_LUAJIT_OPTIONS="--with-luajit-xcflags='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT'"
 
-ARG NGINX_DIGEST_AUTH=1.0.0
 ARG NGINX_SUBSTITUTIONS=e12e965ac1837ca709709f9a26f572a54d83430e
-ARG NGINX_PROXY_CONNECT_VERSION=0.0.7
-ARG NGINX_PROXY_CONNECT_PATCH=proxy_connect_rewrite_102101.patch
 ARG NGINX_VTS_VERSION=0.2.5
 ARG GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
 ARG MODSECURITY_VERSION=1.0.4
 ARG MODSECURITY_LIB_VERSION=v3.0.15
-ARG OWASP_MODSECURITY_CRS_VERSION=v4.26.0
-ARG LUA_VAR_NGINX_MODULE_VERSION=0.5.3
+ARG OWASP_MODSECURITY_CRS_VERSION=v4.27.0
 
 ARG RESTY_CONFIG_OPTIONS="\
     --sbin-path=/usr/sbin/nginx \
@@ -93,9 +89,6 @@ ARG RESTY_CONFIG_OPTIONS="\
 
 ARG RESTY_CONFIG_OPTIONS_MORE="\
     --add-module=ngx_http_substitutions_filter_module-${NGINX_SUBSTITUTIONS} \
-    --add-module=lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_VERSION} \
-    --add-module=ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION} \
-    --add-dynamic-module=nginx-http-auth-digest-${NGINX_DIGEST_AUTH} \
     --add-dynamic-module=ngx_http_geoip2_module-${GEOIP2_VERSION} \
     --add-dynamic-module=ngx_brotli \
     --add-dynamic-module=nginx-sticky-module-ng \
@@ -224,8 +217,6 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && sed -i 's#server: nginx#server: ows#g' bundle/nginx-*/src/http/v2/ngx_http_v2_filter_module.c \
     && sed -i 's#nginx\[8\] = "\\x87\\x3d\\x65\\xaa\\xc2\\xa1\\x3e\\xbf"#nginx\[4\] = "\\x83\\xd5\\xcb\\x77"#g' bundle/nginx-*/src/http/v2/ngx_http_v2_filter_module.c \
     && sed -i 's#nginx\[8\] = { 0x87, 0x3d, 0x65, 0xaa, 0xc2, 0xa1, 0x3e, 0xbf}#nginx\[4\] = { 0x83, 0xd5, 0xcb, 0x77}#g' bundle/nginx-*/src/http/v2/ngx_http_v2_filter_module.c \
-    && curl -fSL https://github.com/atomx/nginx-http-auth-digest/archive/v${NGINX_DIGEST_AUTH}.tar.gz -o nginx-http-auth-digest-${NGINX_DIGEST_AUTH}.tar.gz \
-    && tar xzf nginx-http-auth-digest-${NGINX_DIGEST_AUTH}.tar.gz \
     && curl -fSL https://github.com/yaoweibin/ngx_http_substitutions_filter_module/archive/${NGINX_SUBSTITUTIONS}.tar.gz -o ngx_http_substitutions_filter_module-${NGINX_SUBSTITUTIONS}.tar.gz \
     && tar xzf ngx_http_substitutions_filter_module-${NGINX_SUBSTITUTIONS}.tar.gz \
     && curl -fSL https://github.com/leev/ngx_http_geoip2_module/archive/${GEOIP2_VERSION}.tar.gz -o ngx_http_geoip2_module-${GEOIP2_VERSION}.tar.gz \
@@ -233,13 +224,8 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && curl -fSL https://github.com/SpiderLabs/ModSecurity-nginx/archive/v${MODSECURITY_VERSION}.tar.gz -o ModSecurity-nginx-${MODSECURITY_VERSION}.tar.gz \
     && tar xzf ModSecurity-nginx-${MODSECURITY_VERSION}.tar.gz \
     && sed -i 's#printf("hello")#msc_init()#g' ModSecurity-nginx-${MODSECURITY_VERSION}/config \
-    && curl -fSL https://github.com/api7/lua-var-nginx-module/archive/refs/tags/v${LUA_VAR_NGINX_MODULE_VERSION}.tar.gz -o lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_VERSION}.tar.gz \
-    && tar xzf lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_VERSION}.tar.gz \
-    && curl -fSL https://github.com/chobits/ngx_http_proxy_connect_module/archive/refs/tags/v${NGINX_PROXY_CONNECT_VERSION}.tar.gz -o ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION}.tar.gz \
-    && tar xzf ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION}.tar.gz \
     && curl -fSL https://github.com/vozlt/nginx-module-vts/archive/refs/tags/v${NGINX_VTS_VERSION}.tar.gz -o nginx-module-vts-${NGINX_VTS_VERSION}.tar.gz \
     && tar xzf nginx-module-vts-${NGINX_VTS_VERSION}.tar.gz \
-    && cd bundle/nginx-$(echo $RESTY_VERSION|cut -d . -f 1-3) && patch -p1 < ../../ngx_http_proxy_connect_module-${NGINX_PROXY_CONNECT_VERSION}/patch/${NGINX_PROXY_CONNECT_PATCH} && cd - \
     && git clone --depth=1 https://github.com/moechs/nginx-sticky-module-ng.git \
     && git clone --depth=100 https://github.com/google/ngx_brotli.git \
     && cd ngx_brotli && git reset --hard 63ca02abdcf79c9e788d2eedcc388d2335902e52 && git submodule init && git submodule update && cd - \

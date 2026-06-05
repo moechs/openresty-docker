@@ -10,14 +10,10 @@ Alpine version of OpenResty with luarocks and many additional modules
 * /etc/nginx/stream/*.conf (stream)
 
 ### Additional modules
-* lua-var-nginx-module
 * ngx_http_substitutions_filter_module
-* nginx-http-auth-digest
 * ngx_http_geoip2_module
-* ngx_http_proxy_connect_module
 * ngx_brotli
 * nginx-sticky-module-ng
-* stream_ssl_preread_module
 * ModSecurity-nginx
 * nginx-module-vts
 
