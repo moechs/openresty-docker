@@ -4,16 +4,16 @@
 # https://github.com/openresty/docker-openresty
 
 ARG RESTY_IMAGE_BASE="alpine"
-ARG RESTY_IMAGE_TAG="3.23.4"
+ARG RESTY_IMAGE_TAG="3.24.3"
 
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 ARG TZ=Asia/Shanghai
 
 # Docker Build Arguments
-ARG RESTY_VERSION="1.31.1.1"
+ARG RESTY_VERSION="1.31.8.1"
 
-ARG RESTY_OPENSSL_VERSION="3.5.6"
+ARG RESTY_OPENSSL_VERSION="3.5.8"
 ARG RESTY_OPENSSL_PATCH_VERSION="3.5.5"
 ARG RESTY_OPENSSL_URL_BASE="https://github.com/openssl/openssl/releases/download/openssl-${RESTY_OPENSSL_VERSION}"
 # LEGACY:  "https://www.openssl.org/source/old/1.1.1"
@@ -21,8 +21,8 @@ ARG RESTY_OPENSSL_BUILD_OPTIONS="enable-camellia enable-seed enable-rfc3779 enab
         enable-weak-ssl-ciphers enable-ssl3 enable-ssl3-method enable-md2 enable-ktls enable-fips \
         "
 
-ARG RESTY_PCRE_VERSION="10.47"
-ARG RESTY_PCRE_SHA256="c08ae2388ef333e8403e670ad70c0a11f1eed021fd88308d7e02f596fcd9dc16"
+ARG RESTY_PCRE_VERSION="10.49"
+ARG RESTY_PCRE_SHA256="929f0b20e62879252a15886b06c89f1edef61a363cbd5826fb041080a5e557ae"
 ARG RESTY_PCRE_BUILD_OPTIONS="--enable-jit --enable-pcre2grep-jit --disable-bsr-anycrlf --disable-coverage --disable-ebcdic --disable-fuzz-support \
     --disable-jit-sealloc --disable-never-backslash-C --enable-newline-is-lf --enable-pcre2-8 --enable-pcre2-16 --enable-pcre2-32 \
     --enable-pcre2grep-callout --enable-pcre2grep-callout-fork --disable-pcre2grep-libbz2 --disable-pcre2grep-libz --disable-pcre2test-libedit \
@@ -32,16 +32,16 @@ ARG RESTY_PCRE_OPTIONS="--with-pcre-jit"
 
 ARG RESTY_J="1"
 
-ARG LUAJIT_VERSION=2.1-20260415
+ARG LUAJIT_VERSION=2.1-20261023
 
 ARG RESTY_LUAJIT_OPTIONS="--with-luajit-xcflags='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT'"
 
 ARG NGINX_SUBSTITUTIONS=e12e965ac1837ca709709f9a26f572a54d83430e
-ARG NGINX_VTS_VERSION=0.2.5
+ARG NGINX_VTS_VERSION=0.2.7
 ARG GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
 ARG MODSECURITY_VERSION=1.0.4
-ARG MODSECURITY_LIB_VERSION=v3.0.15
-ARG OWASP_MODSECURITY_CRS_VERSION=v4.27.0
+ARG MODSECURITY_LIB_VERSION=v3.0.17
+ARG OWASP_MODSECURITY_CRS_VERSION=v4.30.0
 
 ARG RESTY_CONFIG_OPTIONS="\
     --sbin-path=/usr/sbin/nginx \
