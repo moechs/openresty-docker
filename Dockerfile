@@ -98,18 +98,19 @@ ARG RESTY_CONFIG_OPTIONS_MORE="\
 
 ARG LUA_RESTY_PACKAGES="\
     anjia0532/lua-resty-redis-util \
+    api7/lua-resty-ipmatcher \
     bungle/lua-resty-jq \
     bungle/lua-resty-prettycjson \
     bungle/lua-resty-session \
     bungle/lua-resty-template \
     bungle/lua-resty-validation \
-    c64bob/lua-resty-aes \
+    cdbattags/lua-resty-jwt \
+    cloudflare/lua-resty-cookie \
     fffonion/lua-resty-acme \
     fffonion/lua-resty-openssl \
-    jkeys089/lua-resty-hmac \
     knyar/nginx-lua-prometheus \
-    spacewander/lua-resty-rsa \
-    xiangnanscu/lua-resty-ipmatcher \
+    ledgetech/lua-resty-http \
+    thibaultcha/lua-resty-mlcache \
     xiaooloong/lua-resty-iconv \
     "
 
@@ -129,8 +130,8 @@ ENV PKG_CONFIG_PATH=/usr/local/openresty/luajit/lib/pkgconfig:/usr/local/openres
 # If OpenResty changes, these may need updating:
 #    /usr/local/openresty/bin/resty -e 'print(package.path)'
 #    /usr/local/openresty/bin/resty -e 'print(package.cpath)'
-ENV LUA_PATH="/usr/local/openresty/site/lualib/?.ljbc;/usr/local/openresty/site/lualib/?/init.ljbc;/usr/local/openresty/lualib/?.ljbc;/usr/local/openresty/lualib/?/init.ljbc;/usr/local/openresty/site/lualib/?.lua;/usr/local/openresty/site/lualib/?/init.lua;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua"
-ENV LUA_CPATH="/usr/local/openresty/site/lualib/?.so;/usr/local/openresty/lualib/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so"
+ENV LUA_PATH="/etc/nginx/lua/?.ljbc;/usr/local/openresty/site/lualib/?.ljbc;/usr/local/openresty/site/lualib/?/init.ljbc;/usr/local/openresty/lualib/?.ljbc;/usr/local/openresty/lualib/?/init.ljbc;/etc/nginx/lua/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/openresty/site/lualib/?/init.lua;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua"
+ENV LUA_CPATH="/etc/nginx/lua/?.so;/usr/local/openresty/site/lualib/?.so;/usr/local/openresty/lualib/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so"
 
 
 RUN cd /tmp && apk add --no-cache --virtual .build-deps \
@@ -263,6 +264,9 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && setcap    cap_net_bind_service=+ep /usr/bin/dumb-init \
     && setcap -v cap_net_bind_service=+ep /usr/bin/dumb-init \
     && cd /tmp \
+    && sed -i 's#\\bopenresty/(\\d+(?:\\.\\d+){3})#\\b(?:openresty|OWS)/(\\d+(?:\\.\\d+){3})#' /usr/local/openresty/bin/opm \
+    && grep -q 'OWS' /usr/local/openresty/bin/opm \
+    && perl -c /usr/local/openresty/bin/opm \
     && for pkg in ${LUA_RESTY_PACKAGES};do opm get ${pkg};done \
     && mkdir -p /etc/nginx \
     && cd /etc/nginx/ \
