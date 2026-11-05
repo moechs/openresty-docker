@@ -98,7 +98,6 @@ ARG RESTY_CONFIG_OPTIONS_MORE="\
 
 ARG LUA_RESTY_PACKAGES="\
     anjia0532/lua-resty-redis-util \
-    api7/lua-resty-ipmatcher \
     bungle/lua-resty-jq \
     bungle/lua-resty-prettycjson \
     bungle/lua-resty-session \
@@ -111,6 +110,7 @@ ARG LUA_RESTY_PACKAGES="\
     knyar/nginx-lua-prometheus \
     ledgetech/lua-resty-http \
     thibaultcha/lua-resty-mlcache \
+    xiangnanscu/lua-resty-ipmatcher \
     xiaooloong/lua-resty-iconv \
     "
 
