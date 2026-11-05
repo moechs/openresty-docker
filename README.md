@@ -24,12 +24,13 @@ Alpine version of OpenResty with luarocks and many additional modules
 * bungle/lua-resty-session
 * bungle/lua-resty-template
 * bungle/lua-resty-validation
-* c64bob/lua-resty-aes
+* cdbattags/lua-resty-jwt
+* cloudflare/lua-resty-cookie
 * fffonion/lua-resty-acme
 * fffonion/lua-resty-openssl
-* jkeys089/lua-resty-hmac
 * knyar/nginx-lua-prometheus
-* spacewander/lua-resty-rsa
+* ledgetech/lua-resty-http
+* thibaultcha/lua-resty-mlcache
 * xiangnanscu/lua-resty-ipmatcher
 * xiaooloong/lua-resty-iconv
 

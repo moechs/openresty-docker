@@ -3,20 +3,49 @@ name: Docker Image CI
 on:
   push:
     branches:
-    - "main"
-    - "releases/**"
-    tags:        
-    - v*
+      - "main"
+      - "releases/**"
+    tags:
+      - v*
     paths-ignore:
-    - '**.md'
+      - '**.md'
 
 env:
   REGISTRY_IMAGE: moechs/openresty
   REGISTRY_IMAGE_DEFAULTBACKEND: moechs/defaultbackend
 
 jobs:
-  build-main:
+  check-arm64-runner:
     runs-on: ubuntu-latest
+    outputs:
+      arm64_runs_on: ${{ steps.check.outputs.arm64_runs_on }}
+    steps:
+      - name: Check for an available self-hosted ARM64 runner
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+        run: |
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo 'arm64_runs_on=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if runners=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runners?per_page=100" 2>/dev/null); then
+            available=$(jq '[.runners[]? | select(.status == "online" and .busy == false) | select(([.labels[]?.name] | index("self-hosted")) != null) | select(([.labels[]?.name] | index("linux")) != null) | select(([.labels[]?.name] | index("ARM64")) != null)] | length' <<< "$runners")
+          else
+            available=0
+          fi
+
+          if [ "$available" -gt 0 ]; then
+            echo 'arm64_runs_on=["self-hosted","linux","ARM64"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'arm64_runs_on=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+          fi
+
+  build-main:
+    needs:
+      - check-arm64-runner
+    runs-on: ${{ matrix.platform == 'linux/arm64' && fromJSON(needs.check-arm64-runner.outputs.arm64_runs_on) || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -106,11 +135,40 @@ jobs:
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
 
+  check-defaultbackend-arm64-runner:
+    needs:
+      - merge-main
+    runs-on: ubuntu-latest
+    outputs:
+      arm64_runs_on: ${{ steps.check.outputs.arm64_runs_on }}
+    steps:
+      - name: Check for an available self-hosted ARM64 runner
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+        run: |
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo 'arm64_runs_on=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if runners=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runners?per_page=100" 2>/dev/null); then
+            available=$(jq '[.runners[]? | select(.status == "online" and .busy == false) | select(([.labels[]?.name] | index("self-hosted")) != null) | select(([.labels[]?.name] | index("linux")) != null) | select(([.labels[]?.name] | index("ARM64")) != null)] | length' <<< "$runners")
+          else
+            available=0
+          fi
+
+          if [ "$available" -gt 0 ]; then
+            echo 'arm64_runs_on=["self-hosted","linux","ARM64"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'arm64_runs_on=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+          fi
 
   build-defaultbackend:
     needs:
       - merge-main
-    runs-on: ubuntu-latest
+      - check-defaultbackend-arm64-runner
+    runs-on: ${{ matrix.platform == 'linux/arm64' && fromJSON(needs.check-defaultbackend-arm64-runner.outputs.arm64_runs_on) || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
