@@ -4,14 +4,14 @@
 # https://github.com/openresty/docker-openresty
 
 ARG RESTY_IMAGE_BASE="alpine"
-ARG RESTY_IMAGE_TAG="3.24.3"
+ARG RESTY_IMAGE_TAG="3.24.4"
 
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 ARG TZ=Asia/Shanghai
 
 # Docker Build Arguments
-ARG RESTY_VERSION="1.31.8.1"
+ARG RESTY_VERSION="1.31.9.1"
 
 ARG RESTY_OPENSSL_VERSION="3.5.8"
 ARG RESTY_OPENSSL_PATCH_VERSION="3.5.5"
@@ -32,8 +32,6 @@ ARG RESTY_PCRE_OPTIONS="--with-pcre-jit"
 
 ARG RESTY_J="1"
 
-ARG LUAJIT_VERSION=2.1-20261023
-
 ARG RESTY_LUAJIT_OPTIONS="--with-luajit-xcflags='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT'"
 
 ARG NGINX_SUBSTITUTIONS=e12e965ac1837ca709709f9a26f572a54d83430e
@@ -41,7 +39,7 @@ ARG NGINX_VTS_VERSION=0.2.7
 ARG GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
 ARG MODSECURITY_VERSION=1.0.4
 ARG MODSECURITY_LIB_VERSION=v3.0.17
-ARG OWASP_MODSECURITY_CRS_VERSION=v4.30.0
+ARG OWASP_MODSECURITY_CRS_VERSION=v4.31.0
 
 ARG RESTY_CONFIG_OPTIONS="\
     --sbin-path=/usr/sbin/nginx \
@@ -230,7 +228,7 @@ RUN cd /tmp && apk add --no-cache --virtual .build-deps \
     && git clone --depth=1 https://github.com/moechs/nginx-sticky-module-ng.git \
     && git clone --depth=100 https://github.com/google/ngx_brotli.git \
     && cd ngx_brotli && git reset --hard 63ca02abdcf79c9e788d2eedcc388d2335902e52 && git submodule init && git submodule update && cd - \
-    && cd bundle/LuaJIT-${LUAJIT_VERSION} \
+    && cd bundle/LuaJIT-*/ \
     && make -j${RESTY_J} TARGET_STRIP=@: CCDEBUG=-g XCFLAGS='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT' CC=cc PREFIX=/usr/local/openresty/luajit \
     && make install PREFIX=/usr/local/openresty/luajit \
     && cd /tmp \
